@@ -1,0 +1,190 @@
+{
+ "host": "www.landwatch.com",
+ "protocol": "https",
+ "requestPath": "texas-land-for-sale/texoma-region/prop-types-3683/price-100000-1000000/acres-10-30",
+ "searchCriteria": {
+  "cityName": null,
+  "countyName": null,
+  "customSearchUrl": null,
+  "isDefaultGeoSearch": false,
+  "isDefaultStateAndTypeSearch": false,
+  "isDefaultStateSearch": false,
+  "isSellerSearchPage": false,
+  "lakeName": null,
+  "propertyType": null,
+  "stateAbbreviation": "TX",
+  "stateName": "Texas",
+  "regionName": "Texoma Texas",
+  "acresMax": 30,
+  "acresMin": 10,
+  "activityTypes": [],
+  "amenityTypes": [],
+  "bathMin": null,
+  "bathMax": null,
+  "bedMin": null,
+  "bedMax": null,
+  "brokerId": 0,
+  "brokerIdList": [],
+  "cityIdList": [],
+  "countyIdList": [],
+  "dateListed": 0,
+  "hasCustomMap": false,
+  "hasExteriorMatterport": false,
+  "hasHouse": null,
+  "hasThumbnail": null,
+  "hasVideo": false,
+  "hasVirtualTour": false,
+  "includeMapPosition": true,
+  "insertedFrom": null,
+  "insertedTo": null,
+  "inventoryIdList": [],
+  "isLanding": false,
+  "keywordQuery": null,
+  "lakeIdList": [],
+  "latitude": null,
+  "limitToPropertiesWithPhoto": null,
+  "listingLevel": null,
+  "longitude": null,
+  "mapEncodedCords": null,
+  "mapLowerLeftLatitude": null,
+  "mapLowerLeftLongitude": null,
+  "mapUpperRightLatitude": null,
+  "mapUpperRightLongitude": null,
+  "mapZoomLevel": null,
+  "marketStatuses": [
+   1,
+   2
+  ],
+  "messages": [],
+  "mineralRights": false,
+  "isNearMeSSR": false,
+  "isNearMeSearch": false,
+  "ownerFinancing": false,
+  "pageIndex": 0,
+  "pageSize": 0,
+  "polygonCords": null,
+  "polygonKey": null,
+  "priceChangedFrom": null,
+  "priceChangedTo": null,
+  "priceChangeLookback": 0,
+  "priceChangeType": 0,
+  "priceMax": 1000000,
+  "priceMin": 100000,
+  "propertyTypes": [
+   3,
+   32,
+   64,
+   512,
+   1024,
+   2048,
+   3584
+  ],
+  "radius": 0,
+  "regionIdList": [
+   519
+  ],
+  "salesPriceMax": null,
+  "salesPriceMin": null,
+  "salesPricePerAcreMax": null,
+  "salesPricePerAcreMin": null,
+  "siteId": 1113,
+  "sort": [
+   {
+    "upgradeLevelId": {
+     "order": "desc",
+     "missing": 0
+    }
+   },
+   {
+    "freeSort": {
+     "order": "asc"
+    }
+   },
+   {
+    "showcases.nationalShowcaseLw": {
+     "order": "desc",
+     "missing": 0,
+     "nested": {
+      "path": "showcases",
+      "filter": {
+       "term": {
+        "showcases.nationalShowcaseLw": 1
+       }
+      }
+     }
+    }
+   },
+   {
+    "showcases.stateShowcaseLw": {
+     "order": "desc",
+     "missing": 0,
+     "nested": {
+      "path": "showcases",
+      "filter": {
+       "term": {
+        "showcases.stateShowcaseLw": 48
+       }
+      }
+     }
+    }
+   },
+   {
+    "showcases.propertyTypeShowcaseLw": {
+     "order": "desc",
+     "missing": 0,
+     "nested": {
+      "path": "showcases",
+      "filter": {
+       "terms": {
+        "showcases.propertyTypeShowcaseLw": [
+         "3",
+         "32",
+         "64",
+         "512",
+         "1024",
+         "2048",
+         "3584"
+        ]
+       }
+      }
+     }
+    }
+   },
+   {
+    "scoreTotalLw": {
+     "order": "desc"
+    }
+   },
+   {
+    "auction.startDate": {
+     "order": "asc"
+    }
+   },
+   {
+    "price": {
+     "order": "desc"
+    }
+   },
+   {
+    "inventoryId": {
+     "order": "asc"
+    }
+   }
+  ],
+  "sortOrderId": 0,
+  "soldDateMax": null,
+  "soldDateMin": null,
+  "sqftMax": null,
+  "sqftMin": null,
+  "stateId": 48,
+  "transactionTypes": [],
+  "type": 0,
+  "userSavedProperties": false,
+  "zip": null
+ },
+ "siteId": 1113,
+ "targetResource": "SearchPage",
+ "noIndex": true,
+ "geoCanonicalUrl": null,
+ "requestUrl": "www.landwatch.com/texas-land-for-sale/texoma-region/prop-types-3683/price-100000-1000000/acres-10-30"
+}

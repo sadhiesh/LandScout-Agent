@@ -1,0 +1,87 @@
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.compact {
+  display: grid;
+  place-items: center;
+}
+
+.mark {
+  display: inline-grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--nav-active);
+  box-shadow: var(--shadow-sm);
+}
+
+.compact .mark {
+  width: 40px;
+  height: 40px;
+}
+
+.mark svg {
+  width: 40px;
+  height: 40px;
+}
+
+.wordmark {
+  display: inline-flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.wordmark strong {
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 1.05;
+}
+
+.wordmark span {
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 1.1;
+}
+
+.frame {
+  fill: color-mix(in srgb, var(--surface-raised) 12%, transparent);
+  stroke: color-mix(in srgb, var(--nav-text) 32%, transparent);
+  stroke-width: 1.5;
+}
+
+.sun {
+  fill: color-mix(in srgb, var(--warning) 88%, white);
+}
+
+.mountain {
+  opacity: 0.95;
+}
+
+.fieldBack {
+  opacity: 0.82;
+}
+
+.fieldFront {
+  fill: color-mix(in srgb, var(--surface-raised) 22%, var(--accent-secondary));
+}
+
+.road {
+  fill: none;
+  stroke: color-mix(in srgb, white 80%, var(--accent-contrast));
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+
+.roof {
+  fill: color-mix(in srgb, var(--warning) 72%, var(--danger));
+}
+
+.home {
+  fill: color-mix(in srgb, var(--surface-raised) 92%, white);
+}

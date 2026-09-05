@@ -1,0 +1,971 @@
+{
+ "siteId": 1113,
+ "filterSections": [
+  {
+   "section": "Region",
+   "filterLinks": [
+    {
+     "displayText": "Houston Region",
+     "relativeUrlPath": "/texas-land-for-sale/houston-region",
+     "count": 13976,
+     "id": 525
+    },
+    {
+     "displayText": "Dallas Prairie Region",
+     "relativeUrlPath": "/texas-land-for-sale/dallas-prairie-region",
+     "count": 7917,
+     "id": 521
+    },
+    {
+     "displayText": "Fort Worth Prairie Region",
+     "relativeUrlPath": "/texas-land-for-sale/fort-worth-prairie-region",
+     "count": 6327,
+     "id": 520
+    },
+    {
+     "displayText": "Blacklands North Region",
+     "relativeUrlPath": "/texas-land-for-sale/blacklands-north-region",
+     "count": 4600,
+     "id": 522
+    },
+    {
+     "displayText": "Piney Woods North Region",
+     "relativeUrlPath": "/texas-land-for-sale/piney-woods-north-region",
+     "count": 4442,
+     "id": 527
+    },
+    {
+     "displayText": "San Antonio Region",
+     "relativeUrlPath": "/texas-land-for-sale/san-antonio-region",
+     "count": 3519,
+     "id": 515
+    },
+    {
+     "displayText": "Northeast Region",
+     "relativeUrlPath": "/texas-land-for-sale/northeast-region",
+     "count": 3267,
+     "id": 526
+    },
+    {
+     "displayText": "Texoma Region",
+     "relativeUrlPath": "/texas-land-for-sale/texoma-region",
+     "count": 3169,
+     "id": 519
+    },
+    {
+     "displayText": "Blacklands South Region",
+     "relativeUrlPath": "/texas-land-for-sale/blacklands-south-region",
+     "count": 2917,
+     "id": 523
+    },
+    {
+     "displayText": "Piney Woods South Region",
+     "relativeUrlPath": "/texas-land-for-sale/piney-woods-south-region",
+     "count": 2859,
+     "id": 528
+    },
+    {
+     "displayText": "Highland Lakes Region",
+     "relativeUrlPath": "/texas-land-for-sale/highland-lakes-region",
+     "count": 2740,
+     "id": 513
+    },
+    {
+     "displayText": "Brazos Region",
+     "relativeUrlPath": "/texas-land-for-sale/brazos-region",
+     "count": 2641,
+     "id": 524
+    },
+    {
+     "displayText": "Coastal Prairie South Region",
+     "relativeUrlPath": "/texas-land-for-sale/coastal-prairie-south-region",
+     "count": 2552,
+     "id": 517
+    },
+    {
+     "displayText": "South Plains Region",
+     "relativeUrlPath": "/texas-land-for-sale/south-plains-region",
+     "count": 2529,
+     "id": 502
+    },
+    {
+     "displayText": "Hill Country South Region",
+     "relativeUrlPath": "/texas-land-for-sale/hill-country-south-region",
+     "count": 2296,
+     "id": 514
+    },
+    {
+     "displayText": "Lower Rio Grande Valley Region",
+     "relativeUrlPath": "/texas-land-for-sale/lower-rio-grande-valley-region",
+     "count": 2267,
+     "id": 529
+    },
+    {
+     "displayText": "Trans Pecos Region",
+     "relativeUrlPath": "/texas-land-for-sale/trans-pecos-region",
+     "count": 1674,
+     "id": 505
+    },
+    {
+     "displayText": "Crosstimbers Region",
+     "relativeUrlPath": "/texas-land-for-sale/crosstimbers-region",
+     "count": 1634,
+     "id": 510
+    },
+    {
+     "displayText": "Coastal Prairie Middle Region",
+     "relativeUrlPath": "/texas-land-for-sale/coastal-prairie-middle-region",
+     "count": 1581,
+     "id": 518
+    },
+    {
+     "displayText": "Coastal Prairie North Region",
+     "relativeUrlPath": "/texas-land-for-sale/coastal-prairie-north-region",
+     "count": 1378,
+     "id": 516
+    },
+    {
+     "displayText": "Hill Country North Region",
+     "relativeUrlPath": "/texas-land-for-sale/hill-country-north-region",
+     "count": 1151,
+     "id": 511
+    },
+    {
+     "displayText": "Edwards Plateau West Region",
+     "relativeUrlPath": "/texas-land-for-sale/edwards-plateau-west-region",
+     "count": 1112,
+     "id": 506
+    },
+    {
+     "displayText": "Edwards Plateau South Region",
+     "relativeUrlPath": "/texas-land-for-sale/edwards-plateau-south-region",
+     "count": 929,
+     "id": 507
+    },
+    {
+     "displayText": "Panhandle Region",
+     "relativeUrlPath": "/texas-land-for-sale/panhandle-region",
+     "count": 921,
+     "id": 501
+    },
+    {
+     "displayText": "North Central Plains Region",
+     "relativeUrlPath": "/texas-land-for-sale/north-central-plains-region",
+     "count": 837,
+     "id": 509
+    },
+    {
+     "displayText": "Rolling Plains Central Region",
+     "relativeUrlPath": "/texas-land-for-sale/rolling-plains-central-region",
+     "count": 785,
+     "id": 504
+    },
+    {
+     "displayText": "Hill Country West Region",
+     "relativeUrlPath": "/texas-land-for-sale/hill-country-west-region",
+     "count": 437,
+     "id": 512
+    },
+    {
+     "displayText": "Rio Grande Plains Region",
+     "relativeUrlPath": "/texas-land-for-sale/rio-grande-plains-region",
+     "count": 374,
+     "id": 508
+    },
+    {
+     "displayText": "Rolling Plains North Region",
+     "relativeUrlPath": "/texas-land-for-sale/rolling-plains-north-region",
+     "count": 205,
+     "id": 503
+    }
+   ]
+  },
+  {
+   "section": "County",
+   "filterLinks": [
+    {
+     "displayText": "Harris County",
+     "relativeUrlPath": "/texas-land-for-sale/harris-county",
+     "count": 3210,
+     "id": 6271
+    },
+    {
+     "displayText": "Montgomery County",
+     "relativeUrlPath": "/texas-land-for-sale/montgomery-county",
+     "count": 2633,
+     "id": 6199
+    },
+    {
+     "displayText": "Parker County",
+     "relativeUrlPath": "/texas-land-for-sale/parker-county",
+     "count": 1794,
+     "id": 5890
+    },
+    {
+     "displayText": "Grayson County",
+     "relativeUrlPath": "/texas-land-for-sale/grayson-county",
+     "count": 1624,
+     "id": 5738
+    },
+    {
+     "displayText": "Comal County",
+     "relativeUrlPath": "/texas-land-for-sale/comal-county",
+     "count": 1580,
+     "id": 6252
+    },
+    {
+     "displayText": "Hidalgo County",
+     "relativeUrlPath": "/texas-land-for-sale/hidalgo-county",
+     "count": 1486,
+     "id": 6345
+    },
+    {
+     "displayText": "Liberty County",
+     "relativeUrlPath": "/texas-land-for-sale/liberty-county",
+     "count": 1482,
+     "id": 6212
+    },
+    {
+     "displayText": "Galveston County",
+     "relativeUrlPath": "/texas-land-for-sale/galveston-county",
+     "count": 1482,
+     "id": 6282
+    },
+    {
+     "displayText": "Collin County",
+     "relativeUrlPath": "/texas-land-for-sale/collin-county",
+     "count": 1382,
+     "id": 5824
+    },
+    {
+     "displayText": "Henderson County",
+     "relativeUrlPath": "/texas-land-for-sale/henderson-county",
+     "count": 1329,
+     "id": 5984
+    },
+    {
+     "displayText": "Brazoria County",
+     "relativeUrlPath": "/texas-land-for-sale/brazoria-county",
+     "count": 1249,
+     "id": 6280
+    },
+    {
+     "displayText": "Dallas County",
+     "relativeUrlPath": "/texas-land-for-sale/dallas-county",
+     "count": 1191,
+     "id": 5893
+    }
+   ]
+  },
+  {
+   "section": "City",
+   "filterLinks": [
+    {
+     "displayText": "Houston",
+     "relativeUrlPath": "/texas-land-for-sale/houston",
+     "count": 2008,
+     "id": 12490
+    },
+    {
+     "displayText": "Cleveland",
+     "relativeUrlPath": "/texas-land-for-sale/cleveland",
+     "count": 1045,
+     "id": 5183
+    },
+    {
+     "displayText": "Weatherford",
+     "relativeUrlPath": "/texas-land-for-sale/weatherford",
+     "count": 850,
+     "id": 28131
+    },
+    {
+     "displayText": "Livingston",
+     "relativeUrlPath": "/texas-land-for-sale/livingston",
+     "count": 728,
+     "id": 15237
+    },
+    {
+     "displayText": "El Paso",
+     "relativeUrlPath": "/texas-land-for-sale/el-paso",
+     "count": 634,
+     "id": 7961
+    },
+    {
+     "displayText": "Fredericksburg",
+     "relativeUrlPath": "/texas-land-for-sale/fredericksburg",
+     "count": 634,
+     "id": 9537
+    },
+    {
+     "displayText": "Huntsville",
+     "relativeUrlPath": "/texas-land-for-sale/huntsville",
+     "count": 610,
+     "id": 12670
+    },
+    {
+     "displayText": "Willis",
+     "relativeUrlPath": "/texas-land-for-sale/willis",
+     "count": 598,
+     "id": 28974
+    },
+    {
+     "displayText": "Dallas",
+     "relativeUrlPath": "/texas-land-for-sale/dallas",
+     "count": 591,
+     "id": 6424
+    },
+    {
+     "displayText": "Conroe",
+     "relativeUrlPath": "/texas-land-for-sale/conroe",
+     "count": 584,
+     "id": 5697
+    },
+    {
+     "displayText": "San Antonio",
+     "relativeUrlPath": "/texas-land-for-sale/san-antonio",
+     "count": 575,
+     "id": 23585
+    },
+    {
+     "displayText": "Kerrville",
+     "relativeUrlPath": "/texas-land-for-sale/kerrville",
+     "count": 568,
+     "id": 13690
+    }
+   ]
+  },
+  {
+   "section": "Property Types",
+   "filterLinks": [
+    {
+     "displayText": "Undeveloped",
+     "relativeUrlPath": "/texas-land-for-sale/undeveloped-land",
+     "count": 47998,
+     "id": 32
+    },
+    {
+     "displayText": "Homesite",
+     "relativeUrlPath": "/texas-land-for-sale/homesites",
+     "count": 35032,
+     "id": 4096
+    },
+    {
+     "displayText": "House",
+     "relativeUrlPath": "/texas-land-for-sale/homes",
+     "count": 24755,
+     "id": 8192
+    },
+    {
+     "displayText": "Farms and Ranches",
+     "relativeUrlPath": "/texas-land-for-sale/farms-ranches",
+     "count": 9476,
+     "id": 3
+    },
+    {
+     "displayText": "Recreational",
+     "relativeUrlPath": "/texas-land-for-sale/recreational-property",
+     "count": 5723,
+     "id": 4
+    },
+    {
+     "displayText": "Waterfront",
+     "relativeUrlPath": "/texas-land-for-sale/waterfront-property",
+     "count": 5112,
+     "id": 3584
+    },
+    {
+     "displayText": "Lakefront",
+     "relativeUrlPath": "/texas-land-for-sale/lakefront-property",
+     "count": 4699,
+     "id": 512
+    },
+    {
+     "displayText": "Hunting",
+     "relativeUrlPath": "/texas-land-for-sale/hunting-property",
+     "count": 3806,
+     "id": 128
+    },
+    {
+     "displayText": "Commercial",
+     "relativeUrlPath": "/texas-land-for-sale/commercial-property",
+     "count": 3657,
+     "id": 64
+    },
+    {
+     "displayText": "Horse",
+     "relativeUrlPath": "/texas-land-for-sale/horse-property",
+     "count": 1044,
+     "id": 256
+    },
+    {
+     "displayText": "Timberland",
+     "relativeUrlPath": "/texas-land-for-sale/timberland-property",
+     "count": 520,
+     "id": 16
+    },
+    {
+     "displayText": "Riverfront",
+     "relativeUrlPath": "/texas-land-for-sale/riverfront-property",
+     "count": 406,
+     "id": 2048
+    },
+    {
+     "displayText": "Oceanfront",
+     "relativeUrlPath": "/texas-land-for-sale/oceanfront-property",
+     "count": 18,
+     "id": 1024
+    }
+   ]
+  },
+  {
+   "section": "Activities",
+   "filterLinks": [
+    {
+     "displayText": "Fishing",
+     "relativeUrlPath": "/texas-land-for-sale/fishing-activity",
+     "count": 8965,
+     "id": 1015
+    },
+    {
+     "displayText": "Horseback Riding",
+     "relativeUrlPath": "/texas-land-for-sale/horseback-riding-activity",
+     "count": 8229,
+     "id": 1016
+    },
+    {
+     "displayText": "Boating",
+     "relativeUrlPath": "/texas-land-for-sale/boating-activity",
+     "count": 7278,
+     "id": 1011
+    },
+    {
+     "displayText": "RVing",
+     "relativeUrlPath": "/texas-land-for-sale/rving-activity",
+     "count": 5968,
+     "id": 1019
+    },
+    {
+     "displayText": "Golfing",
+     "relativeUrlPath": "/texas-land-for-sale/golfing-activity",
+     "count": 3812,
+     "id": 1052
+    },
+    {
+     "displayText": "Camping",
+     "relativeUrlPath": "/texas-land-for-sale/camping-activity",
+     "count": 2641,
+     "id": 1012
+    },
+    {
+     "displayText": "Off-roading",
+     "relativeUrlPath": "/texas-land-for-sale/off-roading-activity",
+     "count": 2308,
+     "id": 1018
+    },
+    {
+     "displayText": "Beach",
+     "relativeUrlPath": "/texas-land-for-sale/beach-activity",
+     "count": 1992,
+     "id": 1010
+    },
+    {
+     "displayText": "Canoeing/Kayaking",
+     "relativeUrlPath": "/texas-land-for-sale/canoeing-kayaking-activity",
+     "count": 1654,
+     "id": 1013
+    },
+    {
+     "displayText": "Conservation",
+     "relativeUrlPath": "/texas-land-for-sale/conservation-activity",
+     "count": 773,
+     "id": 1014
+    },
+    {
+     "displayText": "Aquatic Sporting",
+     "relativeUrlPath": "/texas-land-for-sale/aquatic-sporting-activity",
+     "count": 461,
+     "id": 1053
+    },
+    {
+     "displayText": "Aviation",
+     "relativeUrlPath": "/texas-land-for-sale/aviation-activity",
+     "count": 390,
+     "id": 1009
+    },
+    {
+     "displayText": "Skiing",
+     "relativeUrlPath": "/texas-land-for-sale/skiing-activity",
+     "count": 115,
+     "id": 1065
+    }
+   ]
+  },
+  {
+   "section": "Residence",
+   "filterLinks": [
+    {
+     "displayText": "Yes",
+     "relativeUrlPath": "/texas-land-for-sale/with-residence",
+     "count": 24710,
+     "id": 0
+    },
+    {
+     "displayText": "No",
+     "relativeUrlPath": "/texas-land-for-sale/no-residence",
+     "count": 56326,
+     "id": 0
+    }
+   ]
+  },
+  {
+   "section": "Price",
+   "filterLinks": [
+    {
+     "displayText": "$0 - $49,999",
+     "relativeUrlPath": "/texas-land-for-sale/price-under-49999",
+     "count": 8977,
+     "id": 0
+    },
+    {
+     "displayText": "$50,000 - $99,999",
+     "relativeUrlPath": "/texas-land-for-sale/price-50000-99999",
+     "count": 9870,
+     "id": 0
+    },
+    {
+     "displayText": "$100,000 - $249,999",
+     "relativeUrlPath": "/texas-land-for-sale/price-100000-249999",
+     "count": 16646,
+     "id": 0
+    },
+    {
+     "displayText": "$250,000 - $499,999",
+     "relativeUrlPath": "/texas-land-for-sale/price-250000-499999",
+     "count": 15184,
+     "id": 0
+    },
+    {
+     "displayText": "$500,000 - $749,999",
+     "relativeUrlPath": "/texas-land-for-sale/price-500000-749999",
+     "count": 9321,
+     "id": 0
+    },
+    {
+     "displayText": "$750,000 - $999,999",
+     "relativeUrlPath": "/texas-land-for-sale/price-750000-999999",
+     "count": 6158,
+     "id": 0
+    },
+    {
+     "displayText": "$1,000,000 and up",
+     "relativeUrlPath": "/texas-land-for-sale/price-over-1000000",
+     "count": 14294,
+     "id": 0
+    }
+   ]
+  },
+  {
+   "section": "Parcel Size",
+   "filterLinks": [
+    {
+     "displayText": "0 - 10 Acres",
+     "relativeUrlPath": "/texas-land-for-sale/acres-under-10",
+     "count": 57527,
+     "id": 0
+    },
+    {
+     "displayText": "11 - 50 Acres",
+     "relativeUrlPath": "/texas-land-for-sale/acres-11-50",
+     "count": 12789,
+     "id": 0
+    },
+    {
+     "displayText": "51 - 100 Acres",
+     "relativeUrlPath": "/texas-land-for-sale/acres-51-100",
+     "count": 3465,
+     "id": 0
+    },
+    {
+     "displayText": "101 - 200 Acres",
+     "relativeUrlPath": "/texas-land-for-sale/acres-101-200",
+     "count": 2388,
+     "id": 0
+    },
+    {
+     "displayText": "201 - 500 Acres",
+     "relativeUrlPath": "/texas-land-for-sale/acres-201-500",
+     "count": 1576,
+     "id": 0
+    },
+    {
+     "displayText": "500+ Acres",
+     "relativeUrlPath": "/texas-land-for-sale/acres-over-500",
+     "count": 944,
+     "id": 0
+    },
+    {
+     "displayText": "1,000+ Acres",
+     "relativeUrlPath": "/texas-land-for-sale/acres-over-1000",
+     "count": 396,
+     "id": 0
+    }
+   ]
+  },
+  {
+   "section": "Square Feet",
+   "filterLinks": [
+    {
+     "displayText": "0 - 500 Sq. Ft.",
+     "relativeUrlPath": "/texas-land-for-sale/sqft-under-500",
+     "count": 52121,
+     "id": 0
+    },
+    {
+     "displayText": "501 - 1,000 Sq. Ft.",
+     "relativeUrlPath": "/texas-land-for-sale/sqft-501-1000",
+     "count": 805,
+     "id": 0
+    },
+    {
+     "displayText": "1,001 - 2,000 Sq. Ft.",
+     "relativeUrlPath": "/texas-land-for-sale/sqft-1001-2000",
+     "count": 6689,
+     "id": 0
+    },
+    {
+     "displayText": "2,001 - 3,000 Sq. Ft.",
+     "relativeUrlPath": "/texas-land-for-sale/sqft-2001-3000",
+     "count": 7985,
+     "id": 0
+    },
+    {
+     "displayText": "3,001 - 4,000 Sq. Ft.",
+     "relativeUrlPath": "/texas-land-for-sale/sqft-3001-4000",
+     "count": 3906,
+     "id": 0
+    },
+    {
+     "displayText": "4,001+ Sq. Ft.",
+     "relativeUrlPath": "/texas-land-for-sale/sqft-over-4001",
+     "count": 4114,
+     "id": 0
+    }
+   ]
+  },
+  {
+   "section": "Bedrooms",
+   "filterLinks": [
+    {
+     "displayText": "1+ Bedrooms",
+     "relativeUrlPath": "/texas-land-for-sale/beds-over-1",
+     "count": 22872,
+     "id": 0
+    },
+    {
+     "displayText": "2+ Bedrooms",
+     "relativeUrlPath": "/texas-land-for-sale/beds-over-2",
+     "count": 22313,
+     "id": 0
+    },
+    {
+     "displayText": "3+ Bedrooms",
+     "relativeUrlPath": "/texas-land-for-sale/beds-over-3",
+     "count": 20376,
+     "id": 0
+    },
+    {
+     "displayText": "4+ Bedrooms",
+     "relativeUrlPath": "/texas-land-for-sale/beds-over-4",
+     "count": 11235,
+     "id": 0
+    }
+   ]
+  },
+  {
+   "section": "Bathrooms",
+   "filterLinks": [
+    {
+     "displayText": "1+ Bathrooms",
+     "relativeUrlPath": "/texas-land-for-sale/baths-over-1",
+     "count": 22936,
+     "id": 0
+    },
+    {
+     "displayText": "2+ Bathrooms",
+     "relativeUrlPath": "/texas-land-for-sale/baths-over-2",
+     "count": 20965,
+     "id": 0
+    },
+    {
+     "displayText": "3+ Bathrooms",
+     "relativeUrlPath": "/texas-land-for-sale/baths-over-3",
+     "count": 9589,
+     "id": 0
+    },
+    {
+     "displayText": "4+ Bathrooms",
+     "relativeUrlPath": "/texas-land-for-sale/baths-over-4",
+     "count": 3556,
+     "id": 0
+    }
+   ]
+  },
+  {
+   "section": "Availability",
+   "filterLinks": [
+    {
+     "displayText": "Available",
+     "relativeUrlPath": "/texas-land-for-sale/under-contract",
+     "count": 74869,
+     "id": 0
+    },
+    {
+     "displayText": "Under Contract",
+     "relativeUrlPath": "/texas-land-for-sale/available",
+     "count": 6167,
+     "id": 0
+    },
+    {
+     "displayText": "Off Market",
+     "relativeUrlPath": "/texas-land-for-sale/available/under-contract/off-market",
+     "count": 228522,
+     "id": 0
+    },
+    {
+     "displayText": "Sold",
+     "relativeUrlPath": "/texas-land-for-sale/available/under-contract/sold",
+     "count": 111993,
+     "id": 0
+    }
+   ]
+  },
+  {
+   "section": "Sale Type",
+   "filterLinks": [
+    {
+     "displayText": "For Sale",
+     "relativeUrlPath": "/texas-land-for-sale/for-sale",
+     "count": 81028,
+     "id": 0
+    },
+    {
+     "displayText": "Auction",
+     "relativeUrlPath": "/texas-land-for-sale/auctions",
+     "count": 8,
+     "id": 0
+    }
+   ]
+  },
+  {
+   "section": "Land Uses",
+   "filterLinks": [
+    {
+     "displayText": "Homestead",
+     "relativeUrlPath": "/texas-land-for-sale/present-use-homestead",
+     "count": 3328,
+     "id": 1070
+    },
+    {
+     "displayText": "Pasture",
+     "relativeUrlPath": "/texas-land-for-sale/present-use-pasture",
+     "count": 1261,
+     "id": 1097
+    },
+    {
+     "displayText": "Hobby Farm",
+     "relativeUrlPath": "/texas-land-for-sale/present-use-hobby-farm",
+     "count": 920,
+     "id": 1051
+    },
+    {
+     "displayText": "Orchard",
+     "relativeUrlPath": "/texas-land-for-sale/present-use-orchard",
+     "count": 294,
+     "id": 1050
+    },
+    {
+     "displayText": "Vineyard",
+     "relativeUrlPath": "/texas-land-for-sale/present-use-vineyard",
+     "count": 219,
+     "id": 1049
+    },
+    {
+     "displayText": "Poultry Farm",
+     "relativeUrlPath": "/texas-land-for-sale/present-use-poultry",
+     "count": 72,
+     "id": 755
+    }
+   ]
+  },
+  {
+   "section": "HOA",
+   "filterLinks": [
+    {
+     "displayText": "Yes (Mandatory)",
+     "relativeUrlPath": "/texas-land-for-sale/hoa-mandatory",
+     "count": 1611,
+     "id": 43
+    },
+    {
+     "displayText": "No",
+     "relativeUrlPath": "/texas-land-for-sale/hoa-none",
+     "count": 1467,
+     "id": 44
+    },
+    {
+     "displayText": "Yes (Voluntary)",
+     "relativeUrlPath": "/texas-land-for-sale/hoa-voluntary",
+     "count": 7,
+     "id": 45
+    }
+   ]
+  },
+  {
+   "section": "Housing Type",
+   "filterLinks": [
+    {
+     "displayText": "Barndominium",
+     "relativeUrlPath": "/texas-land-for-sale/housing-type-barndominium",
+     "count": 2111,
+     "id": 1037
+    },
+    {
+     "displayText": "Guest House",
+     "relativeUrlPath": "/texas-land-for-sale/housing-type-guest-house",
+     "count": 1732,
+     "id": 1045
+    },
+    {
+     "displayText": "Mobile Home",
+     "relativeUrlPath": "/texas-land-for-sale/housing-type-mobile-home",
+     "count": 1569,
+     "id": 1044
+    },
+    {
+     "displayText": "Tiny Home",
+     "relativeUrlPath": "/texas-land-for-sale/housing-type-tiny-home",
+     "count": 419,
+     "id": 1046
+    },
+    {
+     "displayText": "Cottage",
+     "relativeUrlPath": "/texas-land-for-sale/housing-type-cottage",
+     "count": 397,
+     "id": 1047
+    },
+    {
+     "displayText": "Cabin",
+     "relativeUrlPath": "/texas-land-for-sale/housing-type-log-cabin",
+     "count": 99,
+     "id": 73
+    },
+    {
+     "displayText": "Lake House",
+     "relativeUrlPath": "/texas-land-for-sale/housing-type-lake-house",
+     "count": 31,
+     "id": 72
+    }
+   ]
+  },
+  {
+   "section": "Geography",
+   "filterLinks": [
+    {
+     "displayText": "Rural",
+     "relativeUrlPath": "/texas-land-for-sale/geography-rural",
+     "count": 1261,
+     "id": 1066
+    },
+    {
+     "displayText": "Mountain",
+     "relativeUrlPath": "/texas-land-for-sale/geography-mountain",
+     "count": 852,
+     "id": 1062
+    },
+    {
+     "displayText": "Riverfront",
+     "relativeUrlPath": "/texas-land-for-sale/geography-riverfront",
+     "count": 151,
+     "id": 1059
+    },
+    {
+     "displayText": "Off Grid",
+     "relativeUrlPath": "/texas-land-for-sale/geography-off-grid",
+     "count": 105,
+     "id": 1064
+    },
+    {
+     "displayText": "Lakefront",
+     "relativeUrlPath": "/texas-land-for-sale/geography-lakefront",
+     "count": 94,
+     "id": 1057
+    },
+    {
+     "displayText": "Desert",
+     "relativeUrlPath": "/texas-land-for-sale/geography-desert",
+     "count": 56,
+     "id": 1058
+    },
+    {
+     "displayText": "Resort",
+     "relativeUrlPath": "/texas-land-for-sale/geography-resort",
+     "count": 18,
+     "id": 1063
+    },
+    {
+     "displayText": "Beachfront",
+     "relativeUrlPath": "/texas-land-for-sale/geography-beachfront",
+     "count": 9,
+     "id": 1061
+    },
+    {
+     "displayText": "Island",
+     "relativeUrlPath": "/texas-land-for-sale/geography-island",
+     "count": 5,
+     "id": 1060
+    }
+   ]
+  },
+  {
+   "section": "Misc",
+   "filterLinks": [
+    {
+     "displayText": "Owner Financing",
+     "relativeUrlPath": "/texas-land-for-sale/owner-financing",
+     "count": 0,
+     "id": 0
+    },
+    {
+     "displayText": "Mineral Rights",
+     "relativeUrlPath": "/texas-land-for-sale/mineral-rights",
+     "count": 0,
+     "id": 0
+    },
+    {
+     "displayText": "Virtual Tour",
+     "relativeUrlPath": "/texas-land-for-sale/virtual-tour",
+     "count": 0,
+     "id": 0
+    },
+    {
+     "displayText": "Exterior Tour",
+     "relativeUrlPath": "/texas-land-for-sale/exterior-tour",
+     "count": 0,
+     "id": 0
+    },
+    {
+     "displayText": "Property Video",
+     "relativeUrlPath": "/texas-land-for-sale/video",
+     "count": 0,
+     "id": 0
+    },
+    {
+     "displayText": "Custom Map",
+     "relativeUrlPath": "/texas-land-for-sale/custom-map",
+     "count": 0,
+     "id": 0
+    }
+   ]
+  }
+ ]
+}

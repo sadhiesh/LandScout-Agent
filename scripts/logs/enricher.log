@@ -1,0 +1,6 @@
+2026-09-04 23:01:49,359 [INFO] __main__: Starting Enricher agent (deterministic)...
+2026-09-04 23:01:49,360 [INFO] __main__: Starting Enricher A2A server on port 8003
+INFO:     Started server process [89429]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8003 (Press CTRL+C to quit)

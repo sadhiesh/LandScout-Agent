@@ -1,0 +1,65 @@
+"""Common utilities shared across all four agents."""
+
+from .a2a_client import A2ACrewClient, make_agent_url
+from .a2a_server import A2ACrewServer
+from .config import (
+    API_PORT,
+    AUDIT_LOG_DIR,
+    ENRICHER_PORT,
+    LOG_LEVEL,
+    LLM_BASE_URL,
+    LLM_KEY_HELPER,
+    LLM_MODEL,
+    LLM_PROVIDER,
+    OPENROUTER_API_KEY,
+    OPENROUTER_BASE_URL,
+    MCP_PORT,
+    POSTGRES_DSN,
+    REDIS_URL,
+    SCORER_PORT,
+    SCOUT_PORT,
+    SUPERVISOR_PORT,
+    A2A_SUPERVISOR_TIMEOUT,
+    A2A_SCOUT_TIMEOUT,
+    A2A_ENRICHER_TIMEOUT,
+    A2A_SCORER_TIMEOUT,
+    LLM_CALL_TIMEOUT,
+    HTTP_CLIENT_TIMEOUT,
+    SSE_HEARTBEAT_INTERVAL,
+)
+from .llm import build_llm
+from .parcel_schema import normalize_listing
+from .trace import TraceEmitter, create_trace_emitter
+
+__all__ = [
+    "A2ACrewClient",
+    "A2ACrewServer",
+    "API_PORT",
+    "AUDIT_LOG_DIR",
+    "ENRICHER_PORT",
+    "LOG_LEVEL",
+    "LLM_BASE_URL",
+    "LLM_KEY_HELPER",
+    "LLM_MODEL",
+    "LLM_PROVIDER",
+    "OPENROUTER_API_KEY",
+    "OPENROUTER_BASE_URL",
+    "MCP_PORT",
+    "POSTGRES_DSN",
+    "REDIS_URL",
+    "SCORER_PORT",
+    "SCOUT_PORT",
+    "SUPERVISOR_PORT",
+    "A2A_SUPERVISOR_TIMEOUT",
+    "A2A_SCOUT_TIMEOUT",
+    "A2A_ENRICHER_TIMEOUT",
+    "A2A_SCORER_TIMEOUT",
+    "LLM_CALL_TIMEOUT",
+    "HTTP_CLIENT_TIMEOUT",
+    "SSE_HEARTBEAT_INTERVAL",
+    "build_llm",
+    "normalize_listing",
+    "TraceEmitter",
+    "create_trace_emitter",
+    "make_agent_url",
+]

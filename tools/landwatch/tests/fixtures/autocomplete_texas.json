@@ -1,0 +1,170 @@
+[
+ {
+  "id": 48,
+  "location": "Texas",
+  "searchPath": "Texas",
+  "stateId": 0,
+  "thumbnailId": 0,
+  "type": 6
+ },
+ {
+  "id": 26279,
+  "location": "Texas City, TX",
+  "searchPath": "Texas-City-TX",
+  "stateId": 48,
+  "thumbnailId": 0,
+  "type": 1
+ },
+ {
+  "id": 50964,
+  "location": "Texas Creek, CO",
+  "searchPath": "Texas-Creek-CO",
+  "stateId": 8,
+  "thumbnailId": 0,
+  "type": 1
+ },
+ {
+  "id": 58791,
+  "location": "Texas, AL",
+  "searchPath": "Texas-AL",
+  "stateId": 1,
+  "thumbnailId": 0,
+  "type": 1
+ },
+ {
+  "id": 132836,
+  "location": "Texas, PA",
+  "searchPath": "Texas-PA",
+  "stateId": 42,
+  "thumbnailId": 0,
+  "type": 1
+ },
+ {
+  "id": 103097,
+  "location": "Texas Corners, MI",
+  "searchPath": "Texas-Corners-MI",
+  "stateId": 26,
+  "thumbnailId": 0,
+  "type": 1
+ },
+ {
+  "id": 50963,
+  "location": "Texas City, IL",
+  "searchPath": "Texas-City-IL",
+  "stateId": 17,
+  "thumbnailId": 0,
+  "type": 1
+ },
+ {
+  "id": 99216,
+  "location": "Texas, MD",
+  "searchPath": "Texas-MD",
+  "stateId": 24,
+  "thumbnailId": 0,
+  "type": 1
+ },
+ {
+  "id": 116807,
+  "location": "Texas, NJ",
+  "searchPath": "Texas-NJ",
+  "stateId": 34,
+  "thumbnailId": 0,
+  "type": 1
+ },
+ {
+  "id": 58792,
+  "location": "Texasville, AL",
+  "searchPath": "Texasville-AL",
+  "stateId": 1,
+  "thumbnailId": 0,
+  "type": 1
+ },
+ {
+  "id": 85836,
+  "location": "Texas, IN",
+  "searchPath": "Texas-IN",
+  "stateId": 18,
+  "thumbnailId": 0,
+  "type": 1
+ },
+ {
+  "id": 6199,
+  "location": "Montgomery County, TX",
+  "searchPath": "Montgomery-County-TX",
+  "stateId": 48,
+  "thumbnailId": 0,
+  "type": 2
+ },
+ {
+  "id": 6271,
+  "location": "Harris County, TX",
+  "searchPath": "Harris-County-TX",
+  "stateId": 48,
+  "thumbnailId": 0,
+  "type": 2
+ },
+ {
+  "id": 5890,
+  "location": "Parker County, TX",
+  "searchPath": "Parker-County-TX",
+  "stateId": 48,
+  "thumbnailId": 0,
+  "type": 2
+ },
+ {
+  "id": 5738,
+  "location": "Grayson County, TX",
+  "searchPath": "Grayson-County-TX",
+  "stateId": 48,
+  "thumbnailId": 0,
+  "type": 2
+ },
+ {
+  "id": 5824,
+  "location": "Collin County, TX",
+  "searchPath": "Collin-County-TX",
+  "stateId": 48,
+  "thumbnailId": 0,
+  "type": 2
+ },
+ {
+  "id": 525,
+  "location": "Houston Texas Region",
+  "searchPath": "Houston-Texas-Region",
+  "stateId": 48,
+  "thumbnailId": 0,
+  "type": 5
+ },
+ {
+  "id": 521,
+  "location": "Dallas Prairie Texas Region",
+  "searchPath": "Dallas-Prairie-Texas-Region",
+  "stateId": 48,
+  "thumbnailId": 0,
+  "type": 5
+ },
+ {
+  "id": 520,
+  "location": "Fort Worth Prairie Texas Region",
+  "searchPath": "Fort-Worth-Prairie-Texas-Region",
+  "stateId": 48,
+  "thumbnailId": 0,
+  "type": 5
+ },
+ {
+  "id": 522,
+  "location": "Blacklands North Texas Region",
+  "searchPath": "Blacklands-North-Texas-Region",
+  "stateId": 48,
+  "thumbnailId": 0,
+  "type": 5
+ },
+ {
+  "id": 527,
+  "location": "Piney Woods North Texas Region",
+  "searchPath": "Piney-Woods-North-Texas-Region",
+  "stateId": 48,
+  "thumbnailId": 0,
+  "type": 5
+ }
+]

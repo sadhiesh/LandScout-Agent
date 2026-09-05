@@ -1,0 +1,20 @@
+2026-09-04 23:01:55,473 [INFO] api.main: Mounted UI from /Users/bdhandapani/Documents/CMU-Agentic/Code_Workspace/LandScout Agent/ui-next/dist
+2026-09-04 23:01:55,473 [INFO] __main__: Mounted UI from /Users/bdhandapani/Documents/CMU-Agentic/Code_Workspace/LandScout Agent/ui-next/dist
+2026-09-04 23:01:55,473 [INFO] __main__: Starting LandScout API on port 8000
+INFO:     Started server process [89576]
+INFO:     Waiting for application startup.
+2026-09-04 23:01:55,486 [INFO] api.main: LandScout API starting up...
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:61837 - "POST /internal/trace HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61837 - "POST /internal/trace HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61837 - "POST /internal/trace HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61837 - "POST /internal/trace HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61837 - "POST /internal/trace HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61837 - "POST /internal/trace HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56744 - "POST /internal/trace HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56744 - "POST /internal/trace HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56744 - "POST /internal/trace HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56744 - "POST /internal/trace HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56744 - "POST /internal/trace HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56744 - "POST /internal/trace HTTP/1.1" 200 OK

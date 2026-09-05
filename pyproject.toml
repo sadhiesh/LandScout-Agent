@@ -1,0 +1,73 @@
+[project]
+name = "landscouter-agents"
+version = "0.1.0"
+description = "Land Scout Multi Agent for investors"
+requires-python = ">=3.10,<3.14"  # CrewAI pins <3.14
+license = {text = "MIT"}
+authors = [
+    {name = "Your Name", email = "your.email@example.com"}
+]
+
+dependencies = [
+    "python-dotenv>=1.0.0",
+    "pydantic>=2.0.0",
+    "httpx[http2]>=0.28.0",  # Required for LandWatch CDN
+    "typer>=0.12.0",
+    "shapely>=2.0.0",  # Required for flood validation area calculations
+]
+
+[project.optional-dependencies]
+agents = [
+    "crewai==1.15.17",
+    "crewai-tools[mcp]==1.15.17",
+    "fastmcp==3.4.7",
+    "fastapi==0.141.1",
+    "uvicorn[standard]",
+    "httpx",
+    "psycopg[binary]",
+    "redis",
+    "pyyaml",
+]
+dev = [
+    "pytest>=7.0",
+]
+
+[project.scripts]
+landwatch = "landwatch.cli:main"
+
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+# Each tools/<name>/<name>/ tree is its own importable package. Agents,
+# api/, and tools.enrichment stay on PYTHONPATH via REPO_ROOT in run.sh —
+# they are not installed. A new tool package needs a row in both lists.
+[tool.setuptools]
+packages = ["landwatch", "collin_cad", "collin_flood", "fema_flood"]
+
+[tool.setuptools.package-dir]
+landwatch = "tools/landwatch/landwatch"
+collin_cad = "tools/collin_cad/collin_cad"
+collin_flood = "tools/collin_flood/collin_flood"
+fema_flood = "tools/fema_flood/fema_flood"
+
+[tool.setuptools.package-data]
+# The bundled geography dataset must ship with the package; landwatch.places
+# falls back to network lookups without it.
+landwatch = ["data/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = [
+    "tests",
+    "tools/landwatch/tests",
+    "tools/collin_cad/tests",
+    "tools/fema_flood/tests",
+    "tools/collin_flood/tests",
+]
+pythonpath = [
+    ".",
+    "tools/landwatch",
+    "tools/collin_cad",
+    "tools/fema_flood",
+    "tools/collin_flood",
+]

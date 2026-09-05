@@ -1,0 +1,148 @@
+# Current investment criteria and scoring weights.
+# The single home for every tunable number in scoring — tools/scoring/ reads this
+# file, so a weight never appears in code or in a prompt.
+#
+# Bump `version` on any weight change: scores record it so a historical ranking
+# can be traced to the weights that produced it.
+
+version: "2026-09-03"
+
+# The only values the agent is allowed to supply on the user's behalf.
+#
+# Keep this list minimal. A default here is indistinguishable from a real
+# constraint once it reaches a search URL, and a constraint the user never
+# asked for hides parcels they might have wanted. `state` earns its place
+# because LandWatch cannot build a search without one.
+#
+# This block previously also carried a price band, an acreage band and three
+# property types. Nothing applied them, but a crash in criteria parsing once
+# dumped the whole block into a live search and turned "need land" into a
+# $100k-$1M, 10-100 acre query the user never asked for. See ADR 0018.
+defaults:
+  state: texas
+
+# Weights must sum to 1.0. Dimensions with no data are dropped and the rest
+# renormalized — see tools/scoring/CLAUDE.md.
+#
+# The last three read county appraisal data and are therefore skipped outside
+# Collin County, where they renormalize away rather than scoring as zero.
+weights:
+  value_vs_comps: 0.25
+  criteria_match: 0.15
+  acreage_fit: 0.12
+  land_use_fit: 0.10
+  developability: 0.10
+  access_and_utilities: 0.10
+  tax_burden: 0.08
+  water_and_terrain: 0.05
+  market_signal: 0.05
+
+# Tunables for the dimensions that read county appraisal data. Every number
+# the CAD scorers use lives here; none belongs in tools/scoring/.
+cad:
+  # value_vs_comps — ask price per acre over the benchmark value per acre.
+  # At or below the benchmark scores 1.0, at this multiple scores 0.
+  value_ratio_ceiling: 2.0
+
+  # acreage_fit — fractional gap between GIS and appraised acreage tolerated
+  # before the dimension is discounted. A wide gap means one figure is stale.
+  acreage_variance_tolerance: 0.05
+  acreage_variance_penalty: 0.25
+
+  # Minimum comparable parcels before a neighborhood median is trusted.
+  min_comp_cohort: 5
+
+  # tax_burden — entities beyond this baseline (county, college, school) each
+  # cost a slice. Special districts are priced separately because they are the
+  # ones a buyer gets blindsided by.
+  baseline_entity_count: 3
+  entity_penalty: 0.10
+  mud_penalty: 0.35
+  tif_penalty: 0.15
+  sbcl_penalty: 0.10
+  # An existing ag valuation cuts carrying cost, but the deferred tax comes due
+  # on change of use, scaled by how much value the ag loss is hiding.
+  ag_valuation_credit: 0.25
+  ag_rollback_penalty: 0.30
+
+  # land_use_fit — landTypeCode/landCategoryCodes prefixes that read as raw or
+  # agricultural land rather than developed residential.
+  raw_land_category_codes: ["D1", "D2"]
+  improved_penalty_raw_land: 0.50
+
+  # developability — Polsby-Popper compactness of the parcel polygon.
+  compactness_floor: 0.20
+  compactness_target: 0.60
+  split_precedent_credit: 0.15
+  protest_penalty: 0.10
+
+  # market_signal — long tenure suggests a seller with basis to spare; an
+  # owner-occupied homestead is a slower and pricier sale.
+  held_years_target: 15.0
+  owner_occupied_penalty: 0.20
+
+# Shortlist size returned to the user.
+shortlist_size: 10
+
+# Presentation thresholds for highlights/drawbacks derivation.
+# Highlights show dimensions that scored well; drawbacks show those that scored
+# poorly. Both are ranked by weight * deviation from neutral 0.5, so the
+# dimension that most moved the score appears first.
+presentation:
+  highlight_threshold: 0.75  # Raw score >= this qualifies as a highlight
+  drawback_threshold: 0.35   # Raw score <= this qualifies as a drawback
+  max_highlights: 5          # Cap on highlights list length
+  max_drawbacks: 5           # Cap on drawbacks list length
+
+# Criteria sufficiency gate. Decides when the Supervisor should ask the user a
+# clarifying question instead of searching. Two stages — see ADR 0018.
+criteria_gate:
+  # Clarifying rounds allowed per conversation, counted across both stages.
+  # After this many, the pipeline proceeds with whatever the user has given.
+  max_rounds: 2
+
+  # Stage 1 (before Scout): block only when a search would be meaningless.
+  # An "actionable signal" is a user-stated location (county/city/region),
+  # budget, acreage, or intent (property_types/activities/land_uses/keyword).
+  # A defaulted state does not count. With at least this many signals the
+  # search runs and Stage 2 judges the result on the real count instead.
+  min_signals: 1
+
+  # Confirm a location the agent worked out rather than the user stating it —
+  # "McKinney" implies Texas, but the user never said so. Searching the wrong
+  # state silently is worse than one short question. Requires the parser to
+  # report _stated_fields; without it every value counts as stated and this
+  # never fires.
+  confirm_inferred_location: true
+
+  # Stage 2 uses `shortlist_size` above as a hard cap on the number of returned
+  # Scout candidates that may proceed to enrichment and scoring.
+
+  # Zero results is the mirror of too-broad and the worse dead end. The agent
+  # names the filter most likely to blame and offers to drop it, rather than
+  # relaxing the search on the user's behalf.
+  offer_relax_on_zero: true
+
+  # Filled from `defaults` above once max_rounds is exhausted. Deliberately
+  # excludes price/acreage: inventing a constraint narrows the result set and
+  # can hide good parcels, so a broad search is the safer failure mode.
+  search_required:
+    - state
+
+# Flood risk tiers and usable acreage discounts.
+# Used by tools/fema_flood/ and tools/collin_flood/ to compute investment_impact.
+flood:
+  risk_tiers:
+    high:
+      description: "Floodway or high-risk zone (VE, V, AE, AO, AH, A)"
+      usable_acres_discount: 1.0  # 100% discount for floodway
+      usable_acres_discount_zone: 0.5  # 50% discount for high-risk zones
+    moderate:
+      description: "Moderate-risk zone (shaded X)"
+      usable_acres_discount: 0.2  # 20% discount
+    low:
+      description: "Low-risk zone (unshaded X)"
+      usable_acres_discount: 0.1  # 10% discount
+    none:
+      description: "No flood zone overlap"
+      usable_acres_discount: 0.0

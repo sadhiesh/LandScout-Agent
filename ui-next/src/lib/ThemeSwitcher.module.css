@@ -1,0 +1,113 @@
+.wrap {
+  position: relative;
+}
+
+.trigger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 6px 10px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--control-border);
+  background: var(--surface-raised);
+  color: var(--text-primary);
+}
+
+.trigger:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+}
+
+.compact .trigger {
+  width: 42px;
+  height: 42px;
+  min-height: 42px;
+  padding: 0;
+  justify-content: center;
+  border-color: transparent;
+  background: transparent;
+  color: var(--nav-text-muted);
+}
+
+.compact .trigger:hover,
+.compact .trigger[aria-expanded='true'] {
+  color: var(--nav-text);
+  background: var(--nav-hover);
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid var(--border-strong);
+}
+
+.popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 40;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-panel);
+  padding: 6px;
+  min-width: 220px;
+  box-shadow: var(--shadow-lg);
+}
+
+.compact .popover {
+  left: calc(100% + 10px);
+  right: auto;
+  bottom: 0;
+  top: auto;
+}
+
+.popoverTitle {
+  padding: 7px 10px 5px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--radius-control);
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  text-align: left;
+}
+
+.option:hover {
+  background: var(--surface-hover);
+}
+
+.optionActive {
+  background: var(--surface-selected);
+  font-weight: 600;
+}
+
+.optionText {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.optionLabel {
+  font-size: 13px;
+}
+
+.optionHint {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.check {
+  margin-left: auto;
+  color: var(--accent-primary);
+}

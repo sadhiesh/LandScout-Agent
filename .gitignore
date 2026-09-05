@@ -1,0 +1,48 @@
+# Secrets
+.env
+.env.*
+!config/.env.example
+
+# Runtime output — the schema in logs/README.md is tracked, the contents are not
+logs/audit/*
+!logs/audit/.gitkeep
+logs/*.log
+.landscout.pids
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Node / UI
+node_modules/
+ui/dist/
+ui/build/
+*.tsbuildinfo
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
+
+#AI_Folders
+.vscode/
+.cursor/
+.claude/
+.cursorrules/*
+.twining/
+presentation/
+
+
+# keep it for future, but ignore now
+docs/

@@ -1,0 +1,391 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+:root {
+  color-scheme: light;
+  --font-body: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-head: var(--font-body);
+  --radius-sm: 5px;
+  --radius-control: 8px;
+  --radius-panel: 12px;
+  --radius-card: 14px;
+  --motion-fast: 150ms ease;
+  --motion-standard: 220ms ease;
+
+  --theme-ocean-swatch: #1d68e8;
+  --theme-daylight-swatch: #44556b;
+  --theme-midnight-swatch: #5a9af7;
+  --theme-terra-swatch: #ad552d;
+  --theme-command-swatch: #39d98a;
+}
+
+:root,
+[data-theme='ocean'] {
+  color-scheme: light;
+  --page-bg: #f7f9fc;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-subtle: #f3f6fa;
+  --surface-hover: #edf3fb;
+  --surface-selected: #e7f0fe;
+  --surface-overlay: rgb(6 35 77 / 54%);
+  --text-primary: #142033;
+  --text-secondary: #526174;
+  --text-muted: #5d6d82;
+  --text-disabled: #8b98aa;
+  --border-subtle: #e4eaf2;
+  --border-default: #d3dce9;
+  --border-strong: #9eafc5;
+  --control-border: #8190a5;
+  --accent-primary: #1a60d4;
+  --accent-hover: #1456c4;
+  --accent-subtle: #e7f0fe;
+  --accent-contrast: #ffffff;
+  --accent-secondary: #0b438f;
+  --focus-ring: #2f7df4;
+  --success: #087d46;
+  --success-bg: #e4f6ed;
+  --success-border: #62b88f;
+  --warning: #9a6200;
+  --warning-bg: #fff4d6;
+  --warning-border: #d9a53a;
+  --danger: #b83232;
+  --danger-bg: #fcecec;
+  --danger-border: #df7777;
+  --info: #176abd;
+  --info-bg: #e8f3ff;
+  --info-border: #72aee6;
+  --neutral-bg: #eef2f6;
+  --neutral-border: #aab6c5;
+  --nav-bg: #06234d;
+  --nav-hover: #0b3268;
+  --nav-active: #1d68e8;
+  --nav-text: #ffffff;
+  --nav-text-muted: #b8cae0;
+  --image-fallback: linear-gradient(135deg, #dceafa, #abc9ed);
+  --shadow-xs: 0 1px 2px rgb(15 35 65 / 6%);
+  --shadow-sm: 0 2px 8px rgb(15 35 65 / 8%);
+  --shadow-md: 0 8px 24px rgb(15 35 65 / 12%);
+  --shadow-lg: 0 18px 48px rgb(15 35 65 / 18%);
+  --service-api: #087d46;
+  --service-supervisor: #176abd;
+  --service-scout: #9a6200;
+  --service-enricher: #7952b3;
+  --service-scorer: #b83232;
+  --service-mcp: #087589;
+}
+
+[data-theme='daylight'] {
+  color-scheme: light;
+  --page-bg: #f5f6f8;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-subtle: #eef1f4;
+  --surface-hover: #e9edf2;
+  --surface-selected: #e4eaf2;
+  --surface-overlay: rgb(24 34 48 / 52%);
+  --text-primary: #182230;
+  --text-secondary: #4d5b6d;
+  --text-muted: #5d6b7d;
+  --text-disabled: #8a96a5;
+  --border-subtle: #e1e5ea;
+  --border-default: #cbd2dc;
+  --border-strong: #96a2b2;
+  --control-border: #7b8798;
+  --accent-primary: #335f8a;
+  --accent-hover: #244b72;
+  --accent-subtle: #e5edf5;
+  --accent-contrast: #ffffff;
+  --accent-secondary: #5b6675;
+  --focus-ring: #246fae;
+  --success: #286c48;
+  --success-bg: #e7f2eb;
+  --success-border: #79a88d;
+  --warning: #885c0b;
+  --warning-bg: #f9efd7;
+  --warning-border: #c39b4b;
+  --danger: #a23838;
+  --danger-bg: #f8eaea;
+  --danger-border: #ce7777;
+  --info: #335f8a;
+  --info-bg: #e5edf5;
+  --info-border: #7fa0c0;
+  --neutral-bg: #eef1f4;
+  --neutral-border: #a4adba;
+  --nav-bg: #25364a;
+  --nav-hover: #344b66;
+  --nav-active: #4b78a6;
+  --nav-text: #ffffff;
+  --nav-text-muted: #c0ccda;
+  --image-fallback: linear-gradient(135deg, #dde3ea, #b8c4d1);
+  --shadow-xs: 0 1px 2px rgb(21 31 43 / 7%);
+  --shadow-sm: 0 2px 8px rgb(21 31 43 / 9%);
+  --shadow-md: 0 8px 24px rgb(21 31 43 / 13%);
+  --shadow-lg: 0 18px 48px rgb(21 31 43 / 19%);
+  --service-api: #286c48;
+  --service-supervisor: #335f8a;
+  --service-scout: #885c0b;
+  --service-enricher: #70509a;
+  --service-scorer: #a23838;
+  --service-mcp: #2a7180;
+}
+
+[data-theme='midnight'] {
+  color-scheme: dark;
+  --page-bg: #071426;
+  --surface: #0d2039;
+  --surface-raised: #132a48;
+  --surface-subtle: #0a1a30;
+  --surface-hover: #193656;
+  --surface-selected: #183d68;
+  --surface-overlay: rgb(1 8 17 / 72%);
+  --text-primary: #f1f5fa;
+  --text-secondary: #c0cee0;
+  --text-muted: #9babc1;
+  --text-disabled: #708099;
+  --border-subtle: #24415f;
+  --border-default: #36597d;
+  --border-strong: #6888aa;
+  --control-border: #6888aa;
+  --accent-primary: #6ba8ff;
+  --accent-hover: #91bcfb;
+  --accent-subtle: #163c68;
+  --accent-contrast: #071426;
+  --accent-secondary: #9d8cff;
+  --focus-ring: #91bcfb;
+  --success: #5bd89a;
+  --success-bg: #113b2d;
+  --success-border: #348963;
+  --warning: #f5be55;
+  --warning-bg: #463515;
+  --warning-border: #a87925;
+  --danger: #ff9292;
+  --danger-bg: #492328;
+  --danger-border: #a9535b;
+  --info: #7bb9ff;
+  --info-bg: #163b63;
+  --info-border: #3d79b8;
+  --neutral-bg: #182b42;
+  --neutral-border: #57718e;
+  --nav-bg: #04101f;
+  --nav-hover: #102945;
+  --nav-active: #286fc8;
+  --nav-text: #ffffff;
+  --nav-text-muted: #a9bdd4;
+  --image-fallback: linear-gradient(135deg, #173b59, #28577b);
+  --shadow-xs: 0 1px 2px rgb(0 0 0 / 25%);
+  --shadow-sm: 0 2px 9px rgb(0 0 0 / 30%);
+  --shadow-md: 0 9px 28px rgb(0 0 0 / 36%);
+  --shadow-lg: 0 20px 55px rgb(0 0 0 / 46%);
+  --service-api: #5bd89a;
+  --service-supervisor: #7bb9ff;
+  --service-scout: #f5be55;
+  --service-enricher: #c5a4ff;
+  --service-scorer: #ff9292;
+  --service-mcp: #65d2e3;
+}
+
+[data-theme='terra'] {
+  color-scheme: light;
+  --page-bg: #f4eee5;
+  --surface: #fffaf2;
+  --surface-raised: #fffdf8;
+  --surface-subtle: #ede3d5;
+  --surface-hover: #e8dccb;
+  --surface-selected: #f1ddcc;
+  --surface-overlay: rgb(58 43 29 / 55%);
+  --text-primary: #30251c;
+  --text-secondary: #5f4f40;
+  --text-muted: #70604f;
+  --text-disabled: #958675;
+  --border-subtle: #e1d3c0;
+  --border-default: #cbb99f;
+  --border-strong: #9c8568;
+  --control-border: #9c8568;
+  --accent-primary: #994521;
+  --accent-hover: #833b20;
+  --accent-subtle: #f1ddcc;
+  --accent-contrast: #ffffff;
+  --accent-secondary: #4f6f3d;
+  --focus-ring: #a84d27;
+  --success: #3f6c39;
+  --success-bg: #e7f0df;
+  --success-border: #85a97a;
+  --warning: #945510;
+  --warning-bg: #f9ebd1;
+  --warning-border: #c58b43;
+  --danger: #963c2d;
+  --danger-bg: #f6e3de;
+  --danger-border: #c87869;
+  --info: #3e6684;
+  --info-bg: #e1ecf2;
+  --info-border: #82a3b7;
+  --neutral-bg: #ede5da;
+  --neutral-border: #aa9984;
+  --nav-bg: #3d3025;
+  --nav-hover: #574436;
+  --nav-active: #a84d27;
+  --nav-text: #fffdf8;
+  --nav-text-muted: #dacbbb;
+  --image-fallback: linear-gradient(135deg, #dbc8ad, #9fb286);
+  --shadow-xs: 0 1px 2px rgb(62 43 25 / 8%);
+  --shadow-sm: 0 2px 8px rgb(62 43 25 / 10%);
+  --shadow-md: 0 8px 24px rgb(62 43 25 / 15%);
+  --shadow-lg: 0 18px 48px rgb(62 43 25 / 21%);
+  --service-api: #3f6c39;
+  --service-supervisor: #3e6684;
+  --service-scout: #945510;
+  --service-enricher: #755092;
+  --service-scorer: #963c2d;
+  --service-mcp: #377483;
+}
+
+[data-theme='command'] {
+  color-scheme: dark;
+  --font-body: "SFMono-Regular", Menlo, Consolas, monospace;
+  --font-head: var(--font-body);
+  --page-bg: #070b0d;
+  --surface: #0c1316;
+  --surface-raised: #111b1f;
+  --surface-subtle: #081013;
+  --surface-hover: #17262b;
+  --surface-selected: #17352d;
+  --surface-overlay: rgb(0 0 0 / 76%);
+  --text-primary: #e5f4eb;
+  --text-secondary: #b5cbbf;
+  --text-muted: #8da99b;
+  --text-disabled: #617a6d;
+  --border-subtle: #1c342b;
+  --border-default: #315345;
+  --border-strong: #638879;
+  --control-border: #638879;
+  --accent-primary: #55dfa0;
+  --accent-hover: #82ebbb;
+  --accent-subtle: #12382b;
+  --accent-contrast: #06100b;
+  --accent-secondary: #58cbe5;
+  --focus-ring: #82ebbb;
+  --success: #55dfa0;
+  --success-bg: #12382b;
+  --success-border: #32845e;
+  --warning: #f1ce68;
+  --warning-bg: #3d3519;
+  --warning-border: #8f792d;
+  --danger: #ff9191;
+  --danger-bg: #422326;
+  --danger-border: #955058;
+  --info: #74d6ed;
+  --info-bg: #12343d;
+  --info-border: #347d8e;
+  --neutral-bg: #172126;
+  --neutral-border: #557066;
+  --nav-bg: #030708;
+  --nav-hover: #11231d;
+  --nav-active: #236e50;
+  --nav-text: #eaf7ef;
+  --nav-text-muted: #9cb9aa;
+  --image-fallback: linear-gradient(135deg, #12382b, #1e5844);
+  --shadow-xs: 0 1px 2px rgb(0 0 0 / 28%);
+  --shadow-sm: 0 2px 8px rgb(0 0 0 / 34%);
+  --shadow-md: 0 8px 24px rgb(0 0 0 / 42%);
+  --shadow-lg: 0 18px 48px rgb(0 0 0 / 52%);
+  --service-api: #55dfa0;
+  --service-supervisor: #74d6ed;
+  --service-scout: #f1ce68;
+  --service-enricher: #c6a5ff;
+  --service-scorer: #ff9191;
+  --service-mcp: #65d8d0;
+}
+
+/* Compatibility aliases keep legacy modules on the same semantic contract. */
+:root {
+  --bg: var(--page-bg);
+  --bg-elevated: var(--surface-raised);
+  --bg-sunken: var(--surface-subtle);
+  --text: var(--text-primary);
+  --text-dim: var(--text-muted);
+  --border: var(--border-default);
+  --accent: var(--accent-primary);
+  --accent-2: var(--accent-secondary);
+  --swatch: var(--accent-primary);
+}
+
+body {
+  overflow: hidden;
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.45;
+  background: var(--page-bg);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+  background: none;
+  border: 0;
+  color: inherit;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+:where(button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--border-strong);
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--text-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

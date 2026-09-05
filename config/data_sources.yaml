@@ -1,0 +1,41 @@
+# Base URLs and rate limits for every external source. No secrets — credential
+# names are declared here, values come from the environment (see .env.example).
+
+landwatch:
+  base_url: https://www.landwatch.com
+  site_id: 1113
+  # HTTP/2 and the full browser header set are mandatory; the CDN returns a
+  # blanket 403 otherwise. See tools/landwatch/CLAUDE.md.
+  http2_required: true
+  min_delay_seconds: 1.0
+  max_retries: 3
+  page_size: 25
+  credential: null
+
+# Flood validation sources
+fema_flood:
+  base_url: https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer
+  enabled: true
+  credential: null
+  layers:
+    28: "Flood Hazard Zones"
+    3: "FIRM Panels"
+    1: "LOMRs"
+    34: "LOMAs"
+
+collin_flood:
+  base_url: https://services9.arcgis.com/8qadn7hfDj86yxAd/arcgis/rest/services/Collin_County_Flood__Bo4_/FeatureServer/0
+  enabled: true
+  credential: null
+
+# Registered but disabled enrichers. Do not enable without an ADR in docs/decisions/.
+
+usda_soil:
+  base_url: https://sdmdataaccess.sc.egov.usda.gov
+  enabled: false
+  credential: null
+
+zoning:
+  base_url: null
+  enabled: false
+  credential: ZONING_API_KEY

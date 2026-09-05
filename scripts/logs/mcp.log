@@ -1,0 +1,6 @@
+INFO:__main__:Starting LandScout MCP server on port 8010
+WARNING:__main__:FastMCP mount disabled - MCP tools not available via protocol
+INFO:     Started server process [89330]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8010 (Press CTRL+C to quit)

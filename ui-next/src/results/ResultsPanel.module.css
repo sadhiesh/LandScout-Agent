@@ -1,0 +1,244 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--surface);
+}
+
+.header {
+  padding: 15px 16px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--surface-raised);
+  flex-shrink: 0;
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 700;
+  font-family: var(--font-head);
+  color: var(--text-primary);
+}
+
+.sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.tools {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.sort {
+  font-size: 11.5px;
+  padding: 5px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--control-border);
+  background: var(--surface);
+  color: var(--text-secondary);
+}
+
+.banner {
+  margin: 12px 16px 0;
+  background: var(--info-bg);
+  border: 1px solid var(--info-border);
+  border-radius: var(--radius-control);
+  padding: 10px 12px;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  flex-shrink: 0;
+}
+
+.bannerIcon {
+  font-size: 16px;
+}
+
+.bannerTitle {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--info);
+  margin-bottom: 2px;
+}
+
+.bannerText {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.refreshBanner {
+  margin: 12px 16px 0;
+  padding: 10px 12px;
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  border: 1px solid var(--accent-primary);
+  border-radius: var(--radius-control);
+  background: var(--accent-subtle);
+  flex-shrink: 0;
+}
+
+.refreshDot {
+  width: 8px;
+  height: 8px;
+  margin-top: 4px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  animation: refreshPulse 1.4s ease-in-out infinite;
+}
+
+.refreshTitle {
+  color: var(--accent-primary);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.refreshText {
+  margin-top: 2px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 32px 20px;
+  color: var(--text-muted);
+}
+
+.emptyArt {
+  display: grid;
+  width: 62px;
+  height: 62px;
+  margin-bottom: 14px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent-subtle);
+  color: var(--accent-primary);
+  font-size: 34px;
+}
+
+.emptyTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.emptySub {
+  font-size: 12.5px;
+  max-width: 300px;
+  line-height: 1.6;
+}
+
+.list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+.searching {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  text-align: center;
+}
+
+.orbit {
+  position: relative;
+  width: 108px;
+  height: 108px;
+  margin-bottom: 22px;
+  border: 1px solid var(--accent-subtle);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 18px var(--surface), inset 0 0 0 19px var(--accent-subtle);
+}
+
+.orbit::before,
+.orbit::after {
+  position: absolute;
+  content: '';
+  border: 1px solid var(--accent-primary);
+  border-radius: 50%;
+  opacity: 0.35;
+}
+
+.orbit::before {
+  inset: 24px;
+}
+
+.orbit::after {
+  inset: 38px;
+  background: var(--accent-primary);
+  opacity: 1;
+  box-shadow: 0 0 0 7px var(--accent-subtle);
+}
+
+.orbit span {
+  position: absolute;
+  top: 7px;
+  left: 50%;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  transform-origin: 0 47px;
+  animation: orbit 2.5s linear infinite;
+}
+
+.searchSteps {
+  width: min(100%, 290px);
+  margin-top: 22px;
+  text-align: left;
+}
+
+.searchStep {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.stepSeen {
+  color: var(--success);
+}
+
+.stepCurrent {
+  color: var(--accent-primary);
+  font-weight: 650;
+}
+
+@keyframes orbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes refreshPulse {
+  50% {
+    opacity: 0.35;
+  }
+}

@@ -1,0 +1,92 @@
+.panel {
+  height: 100%;
+  overflow: auto;
+  padding: 12px;
+}
+
+.empty {
+  padding: 48px 16px;
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+.items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.item {
+  padding: 10px 12px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 12.5px;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.agent {
+  font-weight: 700;
+  color: var(--accent);
+  text-transform: uppercase;
+  font-size: 10.5px;
+  letter-spacing: 0.4px;
+}
+
+.kind {
+  color: var(--text-dim);
+  font-size: 10.5px;
+}
+
+.ts {
+  color: var(--text-dim);
+  font-size: 10.5px;
+  font-family: monospace;
+  flex-shrink: 0;
+}
+
+.summary {
+  margin-top: 4px;
+  color: var(--text);
+  line-height: 1.45;
+}
+
+.error .summary {
+  color: var(--danger);
+}
+
+.section {
+  margin-top: 6px;
+}
+
+.sectionTitle {
+  font-weight: 600;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 11px;
+}
+.sectionTitle:hover {
+  color: var(--text);
+}
+
+.code {
+  margin-top: 4px;
+  padding: 8px;
+  background: var(--bg-sunken);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-dim);
+  font-family: monospace;
+  font-size: 11px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 240px;
+}

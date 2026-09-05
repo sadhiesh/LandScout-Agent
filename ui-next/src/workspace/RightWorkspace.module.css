@@ -1,0 +1,75 @@
+.workspace {
+  display: flex;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--surface);
+  border-left: 1px solid var(--border-subtle);
+}
+
+.tabs {
+  display: flex;
+  min-height: 56px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--surface-raised);
+}
+
+.tab {
+  position: relative;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-bottom: 2px solid transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.tab:hover {
+  background: var(--surface-hover);
+  color: var(--accent-primary);
+}
+
+.tab.active {
+  border-bottom-color: var(--accent-primary);
+  color: var(--accent-primary);
+  background: var(--surface);
+}
+
+.count {
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--accent-subtle);
+  color: var(--accent-primary);
+  font-size: 11px;
+}
+
+.liveDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 0 3px var(--success-bg);
+}
+
+.panel {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.panel[hidden] {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .workspace {
+    border-left: 0;
+  }
+}
