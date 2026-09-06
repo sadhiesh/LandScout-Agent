@@ -1,226 +1,308 @@
 # LandScout Agent
 
-Multi-agent land investment research system that turns plain-language criteria into a ranked shortlist of parcels with defensible rationales.
+Multi-agent land investment research system that turns plain-language criteria into a ranked, defensible shortlist of parcels — and remembers the conversation so follow-ups never re-run the pipeline.
 
 ## Overview
 
-LandScout uses four specialized agents (Supervisor, Scout, Enricher, Scorer) to orchestrate land parcel research:
+LandScout uses four specialised agents orchestrated by a Supervisor. Each agent is an independent HTTP service; only the Supervisor routes between them.
 
-1. **Scout** (:8002) - Searches LandWatch for parcels matching investment criteria
-2. **Enricher** (:8003) - Gathers additional facts (price history, county comparables)
-3. **Scorer** (:8004) - Ranks parcels using deterministic weighted scoring
-4. **Supervisor** (:8001) - Orchestrates the pipeline with memory short-circuiting
+| Agent | Port | Responsibility |
+|---|---|---|
+| **Supervisor** | :8001 | Parses intent, manages memory, gates and routes the pipeline |
+| **Scout** | :8002 | Searches LandWatch for matching parcels and facet counts |
+| **Enricher** | :8003 | Adds county comparables, CAD data, flood data per parcel |
+| **Scorer** | :8004 | Deterministic weighted ranking + prose rationale |
+| **API gateway** | :8000 | FastAPI — `/chat`, `/events/{run_id}` SSE, `/debug/*` |
+| **MCP server** | :8010 | Shared tool vocabulary (streamable-HTTP) for all agents |
 
-The system includes:
-- **API** (:8000) - FastAPI gateway with /chat and /events endpoints
-- **MCP Server** (:8010) - Shared tool vocabulary for all agents
-- **Memory** - Postgres for durable storage, Redis for trace pub/sub
-- **UI** - React + TypeScript investor console with observability
+## Pipeline
+
+```
+User message
+  │
+  ▼ Supervisor: parse intent → apply as criteria patch
+  │
+  ├─ Stage 1 gate: no actionable signal? → ask one question, stop
+  │
+  ▼ Criteria confirmation: show full merged criteria, wait for yes/no
+  │
+  ├─ Memory fingerprint match? → answer from Postgres, stop
+  │
+  ▼ Scout: search LandWatch → listings + facet counts
+  │
+  ├─ Stage 2 gate: total_matching > shortlist_size?
+  │    └─ yes → validate facets, offer refinement options, stop
+  │    └─ zero results → name narrowest filter, offer to drop it, stop
+  │
+  ▼ Enricher: per-parcel facts (CAD, flood, detail)
+  │
+  ▼ Scorer: deterministic weighted score + rationale per parcel
+  │
+  ▼ Supervisor: verify shortlist, return ranked results
+```
+
+### Key pipeline guarantees
+
+- **No invented constraints** — the only default is `state: texas`; price bands, acreage bands, and property types are never supplied on the user's behalf.
+- **Criteria provenance** — every field is tagged `user`, `inferred`, or `default`. Inferred locations (e.g. "McKinney" → Texas) surface in the confirmation and require explicit approval before a search runs.
+- **Facet-guided narrowing** — Stage 2 converts LandWatch's own facet counts into catalog-validated criteria patches. Only options that represent a genuine subset of the current criteria (including correct range intersection checks) are presented.
+- **Keyword hygiene** — purpose/intent words like "investment", "resale", "flip" are stripped from the `keyword` search field; they describe the buyer's goal, not a land feature.
+- **Rationales are auditable** — the Scorer writes prose only from the deterministic score breakdown it is handed. It cannot invent a claim absent from that breakdown.
+- **Memory short-circuit** — SHA-256 fingerprint of canonical criteria JSON; identical fingerprint = Postgres answer, no re-search, no re-scoring.
 
 ## Quick Start
 
 ### Prerequisites
 
-- Python >= 3.10, < 3.14 (CrewAI constraint)
-- Docker and docker-compose (for Postgres/Redis)
-- `uv` package manager
+- Python ≥ 3.10, < 3.14 (CrewAI constraint)
+- Node.js 18+ (for `ui-next/` only)
+- Postgres :5432 and Redis :6379 running locally
+- An LLM gateway (OpenAI-compatible endpoint)
 
 ### Installation
 
 ```bash
-# Clone or navigate to the repository
 cd "LandScout Agent"
 
-# The run.sh script will automatically:
-# - Create .venv if it doesn't exist
-# - Install dependencies if not installed
-# Just run:
-./run.sh
-
-# Or install manually first:
+# Create virtualenv and install all dependencies
 uv venv
 uv pip install -e ".[agents,dev]"
 
-# Copy and configure environment file (required)
+# Copy and configure environment (required before first run)
 cp config/.env.example .env
-# Edit .env with your LLM gateway configuration
+# Fill in LLM_GATEWAY_URL, LLM_MODEL, and gateway credentials
 ```
 
-**Important**: You must configure `.env` with your LLM gateway settings before the agents will work. See `config/.env.example` for required variables.
-
-### Running
+### Running the backend
 
 ```bash
-# Start all services (auto-installs dependencies if needed)
+# Start all five services (Supervisor, Scout, Enricher, Scorer, API)
 ./scripts/run.sh
 
 # Stop all services
 ./scripts/stop.sh
 
-# UI is served at http://localhost:8000
-# Or run in dev mode: cd ui-next && npm run dev
-
-# Or manually start services:
-# 1. docker-compose up -d
-# 2. .venv/bin/python memory/migrate.py
-# 3. Start each agent/service individually
+# Reload a single agent without stopping others
+./scripts/reload.sh <agent-name>
 ```
 
-Services will start on these ports:
-- API: http://localhost:8000
-- Supervisor: http://localhost:8001
-- Scout: http://localhost:8002
-- Enricher: http://localhost:8003
-- Scorer: http://localhost:8004
-- MCP: http://localhost:8010
+Services start on the ports listed in the Overview table. The API gateway (`localhost:8000`) is the only public-facing entry point.
 
-### Usage
+### Running the UI
 
-1. Navigate to http://localhost:8000 in your browser
-2. Enter a natural language request like:
-   - "Find 20-50 acre parcels in Texas under $500k"
-   - "Show me recreational land in Nevada with water access"
-3. The system will search, enrich, score, and return a ranked shortlist
+```bash
+# Development mode (hot reload) — runs on :5174
+cd ui-next
+npm install
+npm run dev
 
-## Architecture
-
-```
-Browser → API (:8000) → Supervisor (:8001)
-                          ├─ Scout (:8002) ──┐
-                          ├─ Enricher (:8003)├─→ MCP (:8010) → LandWatch
-                          └─ Scorer (:8004)  ─┘
+# Production build
+npm run build
 ```
 
-- **Agent-to-Agent (A2A)**: HTTP-based protocol for agent communication
-- **MCP**: Model Context Protocol for shared tool access
-- **Memory**: Postgres + Redis for state management
-- **Tracing**: Redis pub/sub for live SSE streaming to UI
+> The UI dev server runs on `:5174`. The backend does not yet serve the built UI bundle automatically.
+
+### First request
+
+```
+POST localhost:8000/chat
+{"session_id": "<uuid>", "user_id": "<uuid>", "message": "20 acres in Collin County, Texas under $500k"}
+```
+
+Or open `http://localhost:5174` after starting the UI dev server.
 
 ## Configuration
 
-### Scoring Weights
+### Environment variables
 
-Edit `config/criteria.yaml` to adjust scoring dimensions:
+See `config/.env.example`. Required keys:
+
+| Variable | Purpose |
+|---|---|
+| `LLM_GATEWAY_URL` | OpenAI-compatible base URL |
+| `LLM_MODEL` | Model name sent to the gateway |
+| `DATABASE_URL` | Postgres connection string |
+| `REDIS_URL` | Redis connection string |
+
+### Scoring weights
+
+All weights live in `config/criteria.yaml`. They must sum to 1.0; dimensions without data are dropped and the rest renormalized.
 
 ```yaml
 weights:
-  value_vs_comps: 0.30      # Price vs county comparables
-  acreage_fit: 0.15          # How well acres match criteria
-  criteria_match: 0.20       # Matches search filters
-  water_and_terrain: 0.10    # Water features, topography
-  access_and_utilities: 0.15 # Road access, utilities
-  market_signal: 0.10        # Days on market, price cuts
+  value_vs_comps:       0.25   # Ask price / acre vs county median
+  criteria_match:       0.15   # How well the parcel matches stated filters
+  acreage_fit:          0.12   # Deviation from requested size
+  land_use_fit:         0.10   # Raw/ag vs improved land categories
+  developability:       0.10   # Parcel compactness, split precedent
+  access_and_utilities: 0.10   # Road access, utility availability
+  tax_burden:           0.08   # Entity count, MUDs, TIFs, ag rollback
+  water_and_terrain:    0.05   # Flood zone tier, usable acreage discount
+  market_signal:        0.05   # Days on market, tenure, owner-occupancy
 ```
 
-### Enrichment Sources
+Bump `version` in `criteria.yaml` on any weight change; scores record it so a historical ranking is traceable to the weights that produced it.
 
-Enable/disable enrichers in `tools/enrichment/`:
-- ✅ `landwatch_detail` - Price history, full descriptions
-- ✅ `county_comps` - County median price comparisons
-- ❌ `flood_fema` - FEMA flood zones (disabled stub)
-- ❌ `soil_usda` - USDA soil quality (disabled stub)
-- ❌ `zoning` - Zoning information (disabled stub)
+The last three dimensions (`tax_burden`, `water_and_terrain`, `market_signal`) read Collin County Appraisal District data and renormalize away rather than scoring zero outside Collin County.
 
-To enable a stub, implement it and record an ADR in `docs/decisions/`.
+### Shortlist size
+
+```yaml
+shortlist_size: 10
+```
+
+Stage 2 triggers when Scout reports `total_matching > shortlist_size`. Change this to tune where facet narrowing kicks in.
+
+## Enrichment sources
+
+Enrichers are registered in `tools/enrichment/`. A failing enricher is logged and skipped — never fatal.
+
+| Enricher | Status | Data |
+|---|---|---|
+| `landwatch_detail` | ✅ enabled | Full description, price history, photos |
+| `county_comps` | ✅ enabled | Collin CAD median $/acre, comparable parcels |
+| `fema_flood` | ✅ registered | FEMA flood zone overlay, usable-acreage discount |
+| `collin_flood` | ✅ registered | County flood layer cross-referenced with FEMA |
+| `usda_soil` | ❌ stub | USDA soil quality — implement and record an ADR to enable |
+| `zoning` | ❌ stub | Zoning data — implement and record an ADR to enable |
 
 ## Testing
 
 ```bash
-# Run all tests
-pytest
+# LandWatch client — fully offline, runs against captured fixtures
+pytest tools/landwatch/tests/
 
-# Run specific suite
-pytest tools/landwatch/tests/  # LandWatch client (offline)
-pytest tests/                    # Cross-cutting tests
+# Cross-cutting agent and API tests
+pytest tests/
+
+# Full suite (excludes live-LLM tests that need network credentials)
+pytest tools/landwatch/tests/ tests/ --ignore=tests/test_llm_connection.py
 ```
 
-## Development
+Fixtures mean the default run needs no network. If a LandWatch grammar change breaks a test, recapture the fixture — do not loosen the assertion.
 
-### Project Structure
+## UI — investor console (`ui-next/`)
+
+A React + TypeScript investor console designed for transparency.
+
+**Layout**: Sessions rail | Chat | Right workspace (Observability / Parcels tabs)
+
+**Themes**: Ocean (default), Daylight, Midnight, Terra, Command
+
+**Key features**:
+
+- **Transparency Rail** — live SSE narration per pipeline stage; `Reasoning (CoT)` accordion shows the Supervisor's chain-of-thought before any tool fires.
+- **Facet refinement** — when Stage 2 narrows, validated options appear as a `RefinementPicker`; clicking one applies the stored criteria patch and reruns Scout without re-showing the confirmation form.
+- **8-tab Inspector** — score breakdown, raw enrichment data, trace logs, criteria provenance, and more; opened from the Rail footer.
+- **Showcase Mode** — full-bleed animated org-chart driven by the same `/events/{run_id}` trace the console uses.
+- **Session continuity** — previous runs reload their full trace from Postgres on session switch.
+
+## Project structure
 
 ```
-agents/          # Four A2A agents (supervisor, scout, enricher, scorer)
-api/             # FastAPI layer (:8000)
-config/          # criteria.yaml, data_sources.yaml, .env.example
-docs/            # architecture.md, decisions/ ADRs
-logs/            # Audit logging (runtime, gitignored)
-memory/          # Postgres migrations and store interfaces
-tools/           # LandWatch client, MCP server, enrichment, scoring
-ui-next/         # React + TypeScript investor console UI
+agents/
+  supervisor/          # Orchestrator — criteria gate, memory, routing
+  scout/               # LandWatch search + facet parsing
+  enricher/            # Per-parcel fact gathering
+  scorer/              # Deterministic scoring + rationale
+  common/              # A2A client, trace emitter, LLM builder
+
+api/                   # FastAPI gateway (:8000) — /chat, /events, /debug/*
+
+config/
+  criteria.yaml        # Scoring weights, gate thresholds, flood config
+  .env.example         # Required env var template
+
+docs/
+  architecture.md      # Full system design, ports, data flow, trace model
+  agent-contracts.md   # Canonical data structures between agents and tools
+  decisions/           # 31 ADRs — one per settled non-obvious trade-off
+
+memory/
+  schema/              # Numbered SQL migrations (apply in order)
+  store.py             # Postgres read/write helpers
+
+skills/                # Reusable methodology loaded on demand (not on every turn)
+  criteria-parsing/    # LLM prompt template for turn_resolution extraction
+  criteria-sufficiency/ # Stage 1 + Stage 2 gate prompt templates
+  parcel-research-checklist/
+  report-writing-style/
+  scoring-methodology/
+
+tools/
+  landwatch/           # HTTP/2 search client — the only implemented tool adapter
+  collin_cad/          # Collin County appraisal data
+  collin_flood/        # County flood layer
+  fema_flood/          # FEMA flood zone overlay
+  mcp_server/          # FastMCP server exposing tools to agents
+  enrichment/          # Enricher registry and adapters
+  scoring/             # Deterministic scoring engine
+
+ui-next/               # React + TypeScript investor console (:5174 dev)
+
+scripts/               # run.sh, stop.sh, reload.sh, restart-agents.sh
+
+tests/                 # Cross-cutting tests (agent, API)
+logs/                  # Runtime audit logs (gitignored)
 ```
 
-### Key Files
+## Architecture decisions
 
-- `CLAUDE.md` - Root context map (read first)
-- `prompt.md` - Product specification
-- `docs/architecture.md` - Full system architecture
-- Each agent has an `AGENT.md` defining its role and contract
+31 ADRs are in `docs/decisions/`. Notable ones:
 
-### Adding an Agent
+| ADR | Decision |
+|---|---|
+| 0002 | API is the only seam between UI and agents |
+| 0004 | Deterministic scoring + generated prose (rationale cannot invent claims) |
+| 0018 | Criteria sufficiency gate — two-stage, deterministic triggers |
+| 0027 | Mandatory criteria confirmation before every search |
+| 0029 | Scout returns tool result directly (no intermediate LLM paraphrase) |
+| 0031 | Tiered multi-select facet narrowing |
 
-1. Create `agents/<name>/AGENT.md` with role, tools, contract
-2. Assign a port in `docs/architecture.md`
-3. Implement as CrewAI Agent wrapped in A2ACrewServer
-4. Wire into Supervisor routing only (never worker-to-worker)
+## Development conventions
 
-### Adding an Enricher
-
-1. Create `tools/enrichment/<name>.py` with `@register` decorator
-2. Follow the `Enricher` protocol (name, enabled, enrich())
-3. Never invent data - return `None` for unavailable facts
-4. Add test fixture and unit test
-
-## Memory & Caching
-
-The system caches results based on criteria fingerprints:
-- Every initial or amended search shows the complete merged criteria and waits
-  for explicit confirmation before cache lookup or Scout
-- Follow-up questions with unchanged criteria return cached scores
-- No re-running the pipeline for "Show me the top 3" after "Find parcels in Texas"
-- Fingerprint is SHA256 of canonical JSON criteria
-
-## Decisions
-
-See `docs/decisions/` for ADRs:
-- 0001: Folder-local context files
-- 0005: CrewAI native OpenAI provider
-- 0006: Phased UI development
-- 0007: Async CrewAI execution in A2A server
-
-## Contributing
-
-1. Read `CLAUDE.md` first - it's the project map
-2. Run `twining_assemble` before working on agents/
-3. Add ADRs for non-obvious decisions
-4. Record changes with `twining_record` before committing
-5. Use `black` for Python formatting
+- **Python**: `snake_case` modules/functions, `PascalCase` classes, `UPPER_SNAKE` constants. `from __future__ import annotations` on every new module.
+- **TypeScript**: `PascalCase.tsx` components, `camelCase` functions.
+- **New agent**: add `AGENT.md` + port in `docs/architecture.md`, implement as `CrewAI Agent` in `A2ACrewServer`, wire into Supervisor only.
+- **New enricher**: `@register` decorator in `tools/enrichment/`, never fatal, record an ADR.
+- **New persisted field**: SQL migration in `memory/schema/` (number sequentially) + update `memory/CLAUDE.md`.
+- **Secrets**: never in `.env` or committed files; the LLM key is fetched at process start from the gateway.
+- **LandWatch**: must use HTTP/2 + full browser header set; its CDN returns a blanket 403 without them. Never use `requests` or HTTP/1.1 for LandWatch calls.
 
 ## Status
 
-**Current**: Implementation complete, ready for production testing
-- ✅ All infrastructure (config, LLM, datastores, schemas, trace)
-- ✅ All agents (Supervisor, Scout, Enricher, Scorer)
-- ✅ MCP server and enrichment registry
-- ✅ Deterministic scoring system
-- ✅ API layer with SSE streaming
-- ✅ React + TypeScript investor console UI
-- ✅ Async CrewAI execution (ADR 0007)
-- ✅ A2A protocol implementation
-- ⏳ End-to-end integration tests
-- ⏳ Production deployment
+**Mid-build** — core pipeline implemented and tested; some advanced enrichers remain as stubs.
 
-### Known Limitations
+| Area | State |
+|---|---|
+| LandWatch search client | ✅ Complete — offline fixture tests |
+| Criteria parsing + provenance | ✅ Complete |
+| Stage 1 sufficiency gate | ✅ Complete |
+| Criteria confirmation loop | ✅ Complete |
+| Memory fingerprint + short-circuit | ✅ Complete |
+| Facet-guided narrowing (Stage 2) | ✅ Complete |
+| Generic keyword filtering | ✅ Complete |
+| A2A protocol + tracing | ✅ Complete |
+| Deterministic scoring engine | ✅ Complete |
+| Collin CAD enrichment | ✅ Complete |
+| FEMA / county flood enrichment | ✅ Complete |
+| API gateway + SSE streaming | ✅ Complete |
+| React investor console (`ui-next/`) | ✅ Complete |
+| USDA soil / zoning enrichers | ❌ Stubs — not implemented |
+| `docker-compose.yml` / `Dockerfile` | ❌ Not yet |
+| End-to-end integration tests | ⏳ Partial |
+| Root `README.md` → rendered docs | ⏳ This file |
 
-**Network Sandbox**: When running in sandboxed environments, LLM gateway calls may fail with `ConnectionError`. The system architecture and A2A communication work correctly; this is an environmental network restriction, not a code defect. In production or with `required_permissions: ["all"]`, full functionality is available.
+## Known limitations
+
+- **Collin County only** for CAD-backed dimensions (`tax_burden`, `value_vs_comps`, some scoring sub-dims). Those dimensions renormalize away outside Collin County rather than scoring zero.
+- **LandWatch rate limit** — Scout enforces 1 req/s. Live calls in tests are forbidden; use fixtures.
+- **Network sandbox** — in sandboxed CI environments, LLM gateway calls may fail with `ConnectionError`. This is an environmental restriction, not a code defect.
 
 ## License
 
-See LICENSE file.
-
-## Contact
-
-For questions or issues, file a GitHub issue or see `docs/`.
+See `LICENSE`.
 
 ---
 
-**Built with**: Python, CrewAI, FastAPI, Postgres, Redis, A2A Protocol, MCP
+**Built with**: Python 3.10+, CrewAI 1.15, FastAPI, FastMCP, Pydantic v2, httpx (HTTP/2), Postgres, Redis, React 18, TypeScript 5, Vite 5
