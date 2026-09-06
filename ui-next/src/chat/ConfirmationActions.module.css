@@ -1,0 +1,49 @@
+.container {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.confirmButton,
+.editButton {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.confirmButton {
+  background: var(--success, #198754);
+  color: white;
+  flex: 1;
+}
+
+.confirmButton:hover:not(:disabled) {
+  background: var(--success-dark, #157347);
+  transform: translateY(-1px);
+}
+
+.confirmButton:disabled {
+  background: var(--disabled, #adb5bd);
+  cursor: not-allowed;
+  transform: none;
+}
+
+.editButton {
+  background: var(--surface-secondary, #f8f9fa);
+  color: var(--text-primary, #212529);
+  border: 1px solid var(--border, #dee2e6);
+}
+
+.editButton:hover:not(:disabled) {
+  background: var(--surface-hover, #e9ecef);
+  border-color: var(--border-dark, #adb5bd);
+}
+
+.editButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

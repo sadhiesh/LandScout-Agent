@@ -69,6 +69,21 @@ async def get_run_trace(run_id: str) -> list[dict[str, Any]]:
         return events
 
 
+@router.get("/sessions/{session_id}/trace")
+async def get_session_trace(session_id: str) -> list[dict[str, Any]]:
+    """Get all trace events across every run in a session, ordered by timestamp.
+
+    Read-only replay of what Postgres already captured (same rule as every
+    other /debug/* route). Backs the Observability panel's session-scoped
+    history so reasoning from earlier turns is not lost when a new turn
+    starts or the page reloads — only `useTraceStream`'s live per-run stream
+    resets between turns; this endpoint is how the UI recovers the rest.
+    """
+    with PostgresStore() as pg:
+        events = pg.get_trace_events_by_session(session_id)
+        return events
+
+
 @router.get("/parcels/{parcel_id}")
 async def get_parcel_enrichments(parcel_id: str) -> dict[str, Any]:
     """Get all enrichments for a parcel."""

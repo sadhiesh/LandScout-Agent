@@ -26,6 +26,8 @@ from agents.supervisor.criteria_gate import (
     missing_signals,
     pick_relax_candidate,
     stated_criteria,
+    strip_generic_keyword_terms,
+    _is_subset_range,
 )
 from tools.scoring import get_gate_config
 
@@ -269,6 +271,38 @@ def _parcels(count: int) -> list[dict]:
     ]
 
 
+def _facets() -> list[dict]:
+    return [
+        {
+            "section": "City",
+            "options": [
+                {"label": "Anna", "count": 8, "id": 698},
+                {"label": "McKinney", "count": 14, "id": 16744},
+            ],
+        },
+        {
+            "section": "Price",
+            "options": [
+                {"label": "$250,000 - $499,999", "count": 9, "id": 0},
+                {"label": "$500,000 - $749,999", "count": 15, "id": 0},
+            ],
+        },
+        {
+            "section": "Property Types",
+            "options": [
+                {"label": "Undeveloped", "count": 12, "id": 32},
+                {"label": "House", "count": 6, "id": 8192},
+            ],
+        },
+        {
+            "section": "Availability",
+            "options": [
+                {"label": "Available", "count": 19, "id": 0},
+            ],
+        },
+    ]
+
+
 def test_stage2_accepts_a_workable_result_set_for_free() -> None:
     llm = LLMSpy()
 
@@ -277,6 +311,7 @@ def test_stage2_accepts_a_workable_result_set_for_free() -> None:
         parcels=_parcels(8),
         candidate_limit=10,
         total_matching=8,
+        facets=_facets(),
         provenance={"state": "default"},
         llm_fn=llm,
     )
@@ -290,8 +325,8 @@ def test_stage2_asks_when_the_set_is_too_broad() -> None:
         {
             "reasoning": "Prices and sizes span useful ranges.",
             "common_conditions": ["Most parcels are in Mckinney."],
-            "recommendations": ["Choose a maximum price."],
-            "question": "Select up to 10 parcels or narrow your budget.",
+            "recommended_option_ids": ["city:698", "price:250000-499999"],
+            "question": "LandWatch shows 12,403 matches. Which filter should I apply next?",
         }
     )
 
@@ -300,6 +335,7 @@ def test_stage2_asks_when_the_set_is_too_broad() -> None:
         parcels=_parcels(11),
         candidate_limit=10,
         total_matching=12_403,
+        facets=_facets(),
         provenance={"state": "default"},
         llm_fn=llm,
     )
@@ -308,6 +344,7 @@ def test_stage2_asks_when_the_set_is_too_broad() -> None:
     assert result.question
     assert result.common_conditions
     assert result.recommendations
+    assert result.refinement_options
     assert llm.called
 
 
@@ -326,6 +363,7 @@ def test_stage2_hard_cap_applies_to_fully_specified_search() -> None:
         parcels=_parcels(11),
         candidate_limit=10,
         total_matching=12_403,
+        facets=_facets(),
         provenance=provenance,
         llm_fn=llm,
     )
@@ -349,6 +387,7 @@ def test_stage2_hard_cap_does_not_depend_on_missing_signals() -> None:
         parcels=_parcels(11),
         candidate_limit=10,
         total_matching=340,
+        facets=_facets(),
         provenance=provenance,
         llm_fn=llm,
     )
@@ -358,13 +397,19 @@ def test_stage2_hard_cap_does_not_depend_on_missing_signals() -> None:
 
 
 def test_stage2_asks_when_a_narrowing_signal_is_missing() -> None:
-    llm = LLMSpy({"question": "What's your budget?"})
+    llm = LLMSpy(
+        {
+            "question": "LandWatch still shows many matches. Which filter should I apply next?",
+            "recommended_option_ids": ["city:698"],
+        }
+    )
 
     result = assess_breadth(
         criteria={"county": "collin", "acres_min": 20},
         parcels=_parcels(11),
         candidate_limit=10,
         total_matching=12_403,
+        facets=_facets(),
         provenance={"county": "user", "acres_min": "user"},
         llm_fn=llm,
     )
@@ -374,7 +419,7 @@ def test_stage2_asks_when_a_narrowing_signal_is_missing() -> None:
 
 
 def test_stage2_hard_cap_survives_the_round_cap() -> None:
-    llm = LLMSpy({"question": "narrow further?"})
+    llm = LLMSpy({"question": "narrow further?", "recommended_option_ids": ["city:698"]})
     max_rounds = get_gate_config()["max_rounds"]
 
     result = assess_breadth(
@@ -382,6 +427,7 @@ def test_stage2_hard_cap_survives_the_round_cap() -> None:
         parcels=_parcels(11),
         candidate_limit=10,
         total_matching=12_403,
+        facets=_facets(),
         provenance={"state": "default"},
         round_num=max_rounds,
         llm_fn=llm,
@@ -399,6 +445,7 @@ def test_stage2_fails_safe_with_fallback_recommendations() -> None:
         parcels=_parcels(11),
         candidate_limit=10,
         total_matching=12_403,
+        facets=_facets(),
         provenance={"state": "default"},
         llm_fn=llm,
     )
@@ -407,6 +454,43 @@ def test_stage2_fails_safe_with_fallback_recommendations() -> None:
     assert result.question
     assert result.common_conditions
     assert result.recommendations
+    assert result.refinement_options
+
+
+def test_stage2_filters_out_toggle_and_non_narrowing_options() -> None:
+    result = assess_breadth(
+        criteria={"state": "texas"},
+        parcels=_parcels(11),
+        candidate_limit=10,
+        total_matching=20,
+        facets=_facets(),
+        provenance={"state": "default"},
+        llm_fn=LLMSpy({"question": "narrow", "recommended_option_ids": ["city:698"]}),
+    )
+
+    ids = {option["id"] for option in result.refinement_options}
+
+    assert "availability:available" not in ids
+    assert "city:698" in ids
+
+
+def test_stage2_builds_clearable_range_patches() -> None:
+    result = assess_breadth(
+        criteria={"state": "texas", "price_min": 100_000, "price_max": 1_000_000},
+        parcels=_parcels(11),
+        candidate_limit=10,
+        total_matching=20,
+        facets=_facets(),
+        provenance={"state": "default"},
+        llm_fn=LLMSpy({"question": "narrow", "recommended_option_ids": ["price:250000-499999"]}),
+    )
+
+    price_option = next(
+        option for option in result.refinement_options if option["id"] == "price:250000-499999"
+    )
+
+    assert price_option["criteria_patch"] == {"price_min": 250000, "price_max": 499999}
+    assert price_option["clear_fields"] == ["price_min", "price_max"]
 
 
 # Configuration invariants
@@ -1172,3 +1256,261 @@ def test_gate_emits_thought_events() -> None:
     assert events
     assert all(kind == "thought" for kind, _, _ in events)
     assert events[0][2]["stage"] == 1
+
+
+# Multi-turn keyword preservation
+
+
+def test_merge_preserves_existing_keyword_when_adding_new_one() -> None:
+    """Keywords should accumulate across turns, not replace."""
+    prior = {"keyword": "creek", "county": "collin"}
+    patch = {"keyword": "barn"}
+
+    result = merge_criteria(prior, patch)
+
+    # Both keywords should be present
+    assert result["keyword"] in ("creek barn", "barn creek")
+    assert result["county"] == "collin"
+
+
+def test_merge_replaces_keyword_when_user_explicitly_clears() -> None:
+    """Explicit replacement via _clear_fields should override accumulation."""
+    prior = {"keyword": "creek"}
+    patch = {"keyword": "barn"}
+    clear_fields = ["keyword"]
+
+    result = merge_criteria(prior, patch, clear_fields)
+
+    assert result["keyword"] == "barn"
+
+
+def test_unsupported_geography_should_become_keyword() -> None:
+    """'waterfront' is not a valid Geography, so it should route to keyword."""
+    # This will be handled in the normalization layer, but we test the merge logic here
+    prior = {"county": "collin"}
+    patch = {"keyword": "waterfront", "geographies": []}  # After normalization
+
+    result = merge_criteria(prior, patch)
+
+    assert result["keyword"] == "waterfront"
+    assert result["geographies"] == []
+
+
+# ---------------------------------------------------------------------------
+# strip_generic_keyword_terms
+# ---------------------------------------------------------------------------
+
+
+def test_strip_investment_alone_returns_none() -> None:
+    """The canonical bug case: 'investment' from a purpose statement -> None."""
+    assert strip_generic_keyword_terms("investment") is None
+
+
+def test_strip_investing_returns_none() -> None:
+    assert strip_generic_keyword_terms("investing") is None
+
+
+def test_strip_flip_returns_none() -> None:
+    assert strip_generic_keyword_terms("flip") is None
+
+
+def test_strip_flipping_returns_none() -> None:
+    assert strip_generic_keyword_terms("flipping") is None
+
+
+def test_strip_resale_returns_none() -> None:
+    assert strip_generic_keyword_terms("resale") is None
+
+
+def test_strip_profit_returns_none() -> None:
+    assert strip_generic_keyword_terms("profit") is None
+
+
+def test_strip_personal_use_phrase_returns_none() -> None:
+    """Multi-word denylist phrase should be removed from the string."""
+    assert strip_generic_keyword_terms("personal use") is None
+
+
+def test_strip_quick_sale_phrase_returns_none() -> None:
+    assert strip_generic_keyword_terms("quick sale") is None
+
+
+def test_strip_cash_buyer_phrase_returns_none() -> None:
+    assert strip_generic_keyword_terms("cash buyer") is None
+
+
+def test_strip_leaves_genuine_feature_untouched() -> None:
+    """Real land features must not be affected."""
+    assert strip_generic_keyword_terms("creek access") == "creek access"
+
+
+def test_strip_leaves_timber_untouched() -> None:
+    assert strip_generic_keyword_terms("timber") == "timber"
+
+
+def test_strip_leaves_pond_untouched() -> None:
+    assert strip_generic_keyword_terms("pond") == "pond"
+
+
+def test_strip_removes_generic_word_from_mixed_string() -> None:
+    """'investment' at the end of a genuine feature string is stripped cleanly."""
+    result = strip_generic_keyword_terms("creek access investment")
+    assert result == "creek access"
+
+
+def test_strip_removes_generic_word_at_start_of_string() -> None:
+    assert strip_generic_keyword_terms("investment creek") == "creek"
+
+
+def test_strip_removes_generic_phrase_from_mixed_string() -> None:
+    """Multi-word denylist phrase surrounded by feature words is removed."""
+    result = strip_generic_keyword_terms("pond personal use timber")
+    assert result == "pond timber"
+
+
+def test_strip_none_returns_none() -> None:
+    assert strip_generic_keyword_terms(None) is None
+
+
+def test_strip_empty_string_returns_none() -> None:
+    # Empty string is falsy → treated like None
+    assert strip_generic_keyword_terms("") is None
+
+
+def test_strip_case_insensitive() -> None:
+    """Denylist check must be case-insensitive."""
+    assert strip_generic_keyword_terms("Investment") is None
+    assert strip_generic_keyword_terms("INVESTMENT") is None
+    assert strip_generic_keyword_terms("Flipping") is None
+
+
+def test_strip_does_not_match_substring_of_genuine_word() -> None:
+    """'flip' should NOT match inside 'flipper' or 'backflip'."""
+    # 'flip' appears as a substring in 'backflip', not as a whole word.
+    assert strip_generic_keyword_terms("backflip") == "backflip"
+
+
+# ---------------------------------------------------------------------------
+# merge_criteria — generic keyword filtering on accumulation
+# ---------------------------------------------------------------------------
+
+
+def test_merge_drops_generic_keyword_on_accumulation() -> None:
+    """When a new turn brings a generic keyword, merge must discard it."""
+    prior = {"keyword": "creek", "county": "collin"}
+    patch = {"keyword": "investment"}
+
+    result = merge_criteria(prior, patch)
+
+    # 'investment' is generic and must be stripped; 'creek' must survive.
+    assert result["keyword"] == "creek"
+
+
+def test_merge_drops_generic_keyword_when_prior_also_generic() -> None:
+    """If both prior and patch keyword are generic, the merged result is None."""
+    prior = {"keyword": "investment"}
+    patch = {"keyword": "resale"}
+
+    result = merge_criteria(prior, patch)
+
+    assert result["keyword"] is None
+
+
+def test_merge_keeps_feature_even_when_generic_is_appended() -> None:
+    """Accumulating a genuine feature over a previously-generic keyword preserves it."""
+    prior = {"keyword": "investment"}
+    patch = {"keyword": "timber"}
+
+    result = merge_criteria(prior, patch)
+
+    # 'investment' stripped, 'timber' survives.
+    assert result["keyword"] == "timber"
+
+
+# ---------------------------------------------------------------------------
+# _is_subset_range — the facet narrowing gate
+# ---------------------------------------------------------------------------
+
+
+def test_subset_range_no_current_constraint_accepts_anything() -> None:
+    """No existing constraint: any proposed range is valid."""
+    assert _is_subset_range(None, None, None, 10) is True
+    assert _is_subset_range(None, None, 10, None) is True
+    assert _is_subset_range(None, None, 5, 50) is True
+
+
+def test_subset_range_root_cause_under10_when_floor_is_10() -> None:
+    """THE BUG: '0-10 Acres' facet (new_min=None, new_max=10) when acres_min=10.
+
+    This was presented as a valid narrowing option because the old code only
+    checked new_min < current_min (skipped when new_min is None) and
+    new_max < current_min (10 < 10 is False).  The correct answer is False:
+    removing the user's stated 10-acre floor widens the search.
+    """
+    # User set acres_min=10 ("at least 10 acres"); facet "0-10 Acres" → (None, 10)
+    assert _is_subset_range(10, None, None, 10) is False
+
+
+def test_subset_range_dropping_floor_always_widens() -> None:
+    """Any proposed range with no floor when there is an existing floor is invalid."""
+    assert _is_subset_range(5, None, None, 100) is False
+    assert _is_subset_range(5, 50, None, 50) is False
+
+
+def test_subset_range_dropping_ceiling_always_widens() -> None:
+    """Any proposed range with no ceiling when there is an existing ceiling is invalid."""
+    assert _is_subset_range(None, 100, 50, None) is False
+    assert _is_subset_range(10, 100, 50, None) is False
+
+
+def test_subset_range_new_floor_below_existing_floor_rejected() -> None:
+    """Lowering the floor widens the search."""
+    assert _is_subset_range(10, 50, 5, 50) is False
+    assert _is_subset_range(10, 50, 0, 40) is False
+
+
+def test_subset_range_new_ceiling_above_existing_ceiling_rejected() -> None:
+    """Raising the ceiling widens the search."""
+    assert _is_subset_range(10, 50, 10, 100) is False
+    assert _is_subset_range(10, 50, 20, 200) is False
+
+
+def test_subset_range_new_ceiling_exactly_at_floor_is_degenerate() -> None:
+    """new_max == current_min is a degenerate empty intersection; must be rejected.
+
+    Previously `new_max < current_min` (strict) passed this as valid.
+    """
+    assert _is_subset_range(10, None, None, 10) is False   # the exact bug case
+    assert _is_subset_range(10, 50, 5, 10) is False        # upper bound at existing lower bound
+
+
+def test_subset_range_new_floor_exactly_at_ceiling_is_degenerate() -> None:
+    """new_min == current_max is a degenerate empty intersection; must be rejected."""
+    assert _is_subset_range(None, 50, 50, None) is False
+    assert _is_subset_range(10, 50, 50, 100) is False
+
+
+def test_subset_range_valid_inner_range_accepted() -> None:
+    """A narrower range fully inside the current range is valid."""
+    assert _is_subset_range(10, 100, 20, 80) is True
+
+
+def test_subset_range_valid_tighter_floor_accepted() -> None:
+    """Raising the floor only is a valid narrowing."""
+    # User has acres_min=10; facet "11-50 Acres" → (11, 50) — this is the realistic case.
+    assert _is_subset_range(10, None, 11, 50) is True
+
+
+def test_subset_range_same_floor_lower_ceiling_accepted() -> None:
+    """Same floor, tighter ceiling narrows the search."""
+    assert _is_subset_range(10, None, 10, 50) is True
+
+
+def test_subset_range_only_floor_set_tighter_floor_accepted() -> None:
+    """Only existing floor; proposed range raises it."""
+    assert _is_subset_range(5, None, 20, 100) is True
+
+
+def test_subset_range_only_ceiling_set_new_ceiling_lower_accepted() -> None:
+    """Only existing ceiling; proposed range lowers it."""
+    assert _is_subset_range(None, 500000, None, 250000) is True

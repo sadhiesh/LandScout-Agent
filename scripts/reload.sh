@@ -4,7 +4,9 @@
 #   service_name: supervisor, scout, enricher, scorer, api, mcp
 
 SERVICE="${1:-supervisor}"
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+cd "$REPO_ROOT"
 # Same contract as run.sh: repo root on PYTHONPATH; tool clients are installed.
 export PYTHONPATH="${REPO_ROOT}:${PYTHONPATH}"
 export SSL_CERT_FILE="${REPO_ROOT}/.venv/lib/python3.13/site-packages/certifi/cacert.pem"

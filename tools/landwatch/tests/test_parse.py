@@ -62,6 +62,20 @@ def test_applied_filters_are_surfaced(search_result):
     assert any("Texoma" in f for f in search_result.applied_filters)
 
 
+def test_search_facets_are_parsed(criteria):
+    payload = load("search_collin_county_acres_5_20.json")
+    result = parse_search(payload, criteria.model_copy(update={"county": "collin", "region": None}), "/texas-land-for-sale/collin-county/acres-5-20")
+
+    assert result.total_count == 281
+    assert result.location_name == "Collin County, TX"
+    assert result.facets
+    assert result.facets[0].section == "City"
+    assert result.facets[0].options[0].label == "Anna"
+    assert result.facets[0].options[0].count == 44
+    assert result.facets[0].options[0].facet_id == 698
+    assert result.facets[-1].section == "Availability"
+
+
 def test_listing_core_fields(search_result):
     listing = search_result.listings[0]
     assert listing.property_id == 420918697
@@ -200,6 +214,7 @@ def test_models_round_trip_json(search_result, detail):
     restored = json.loads(search_result.model_dump_json())
     assert restored["total_count"] == 306
     assert restored["listings"][0]["property_id"] == 420918697
+    assert restored["facets"][0]["section"]
 
     restored_detail = json.loads(detail.model_dump_json())
     assert restored_detail["mls_id"] == "20908449"

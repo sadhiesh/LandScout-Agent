@@ -217,6 +217,21 @@ def run_search(**kwargs: Any) -> str:
             "total_matching": result.total_count,
             "returned": len(result.listings),
             "location": result.location_name,
+            "facets": [
+                {
+                    "section": section.section,
+                    "options": [
+                        {
+                            "label": option.label,
+                            "count": option.count,
+                            "id": option.facet_id,
+                            "relative_url_path": option.relative_url_path,
+                        }
+                        for option in section.options
+                    ],
+                }
+                for section in result.facets
+            ],
             "listings": [
                 {
                     "property_id": listing.property_id,

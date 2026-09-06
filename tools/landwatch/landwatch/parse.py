@@ -13,6 +13,8 @@ from typing import Any
 
 from .models import (
     Broker,
+    FacetOption,
+    FacetSection,
     Listing,
     PriceEvent,
     PropertyDetail,
@@ -79,6 +81,38 @@ def _text(value: Any) -> str | None:
     return None
 
 
+def _parse_facet_option(raw: dict[str, Any]) -> FacetOption | None:
+    label = _text(raw.get("displayText"))
+    if not label:
+        return None
+    count = raw.get("count")
+    return FacetOption(
+        label=label,
+        count=int(count) if isinstance(count, (int, float)) else 0,
+        relative_url_path=_text(raw.get("relativeUrlPath")),
+        facet_id=int(raw["id"]) if isinstance(raw.get("id"), (int, float)) else None,
+    )
+
+
+def _parse_facet_sections(raw_sections: list[dict[str, Any]]) -> list[FacetSection]:
+    sections: list[FacetSection] = []
+    for raw_section in raw_sections:
+        name = _text(raw_section.get("section"))
+        if not name:
+            continue
+        options = [
+            option
+            for option in (
+                _parse_facet_option(raw_option)
+                for raw_option in (raw_section.get("filterLinks") or [])
+                if isinstance(raw_option, dict)
+            )
+            if option is not None
+        ]
+        sections.append(FacetSection(section=name, options=options))
+    return sections
+
+
 def parse_listing(raw: dict[str, Any]) -> Listing:
     """Build a Listing from one ``searchResults.propertyResults`` entry."""
     broker = Broker(
@@ -137,6 +171,7 @@ def parse_search(
         for text in (f.get("displayText", "").strip() for f in payload.get("activeFilters") or [])
         if text
     ]
+    facets = _parse_facet_sections(payload.get("filterSections") or [])
 
     return SearchResult(
         criteria=criteria,
@@ -147,6 +182,7 @@ def parse_search(
         page_size=RESULTS_PER_PAGE,
         total_pages=max(1, math.ceil(total / RESULTS_PER_PAGE)) if total else 0,
         listings=listings,
+        facets=facets,
         location_name=_text(pagination.get("locationName")),
         next_page_path=_text(pagination.get("nextLink")),
         applied_filters=applied,

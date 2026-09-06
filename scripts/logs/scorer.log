@@ -1,6 +1,0 @@
-2026-09-04 23:01:51,378 [INFO] __main__: Starting Scorer agent (deterministic + LLM rationales)...
-2026-09-04 23:01:51,379 [INFO] __main__: Starting Scorer A2A server on port 8004
-INFO:     Started server process [89502]
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
-INFO:     Uvicorn running on http://0.0.0.0:8004 (Press CTRL+C to quit)

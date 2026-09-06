@@ -1,4 +1,4 @@
-"""Offline contract tests for chat persistence and candidate selection."""
+"""Offline contract tests for chat persistence and narrowing payloads."""
 
 from __future__ import annotations
 
@@ -52,28 +52,32 @@ class FakeA2AClient:
         type(self).last_context = kwargs["context"]
         return json.dumps(
             {
-                "message": "Choose up to 10 parcels.",
+                "message": "LandWatch shows 20 matches. Choose one more filter.",
                 "shortlist": [],
-                "candidates": [{"property_id": "p1"}, {"property_id": "p2"}],
-                "candidate_analysis": {
-                    "common_conditions": ["Both are in Collin County."],
-                    "recommendations": ["Choose a maximum price."],
+                "refinement_options": [
+                    {"id": "city:anna", "section": "City", "label": "Anna", "count": 8}
+                ],
+                "narrowing_analysis": {
+                    "common_conditions": ["Location filters can cut the result set sharply."],
+                    "recommendations": ["City: Anna (8 matches)"],
                 },
                 "criteria": {"county": "collin"},
                 "total_matching": 20,
                 "awaiting_clarification": True,
                 "clarification": {
-                    "kind": "candidate_selection",
-                    "candidate_run_id": "source-run",
+                    "kind": "facet_narrowing",
+                    "refinement_options": [
+                        {"id": "city:anna", "section": "City", "label": "Anna", "count": 8}
+                    ],
                 },
                 "journey_steps": [
-                    {"type": "searched", "message": "Found candidates.", "details": {}}
+                    {"type": "searched", "message": "Found broad results.", "details": {}}
                 ],
             }
         )
 
 
-def test_chat_persists_one_final_assistant_candidate_message(monkeypatch) -> None:
+def test_chat_persists_one_final_assistant_narrowing_message(monkeypatch) -> None:
     FakeStore.writes = []
     monkeypatch.setattr(memory.store, "PostgresStore", FakeStore)
     monkeypatch.setattr(chat_module, "A2ACrewClient", FakeA2AClient)
@@ -97,12 +101,11 @@ def test_chat_persists_one_final_assistant_candidate_message(monkeypatch) -> Non
     assert len(assistant_writes) == 2
     assert len(final_writes) == 1
     persisted = final_writes[0]["payload"]
-    assert len(persisted["candidates"]) == 2
-    assert persisted["candidate_analysis"]["recommendations"]
+    assert persisted["refinement_options"][0]["label"] == "Anna"
+    assert persisted["narrowing_analysis"]["recommendations"]
     assert persisted["candidate_limit"] == chat_module.CANDIDATE_LIMIT
     assert persisted["awaiting_clarification"] is True
-    assert persisted["clarification"]["kind"] == "candidate_selection"
-    assert persisted["clarification"]["candidate_run_id"] == "source-run"
+    assert persisted["clarification"]["kind"] == "facet_narrowing"
     assert FakeA2AClient.last_context["selected_parcel_ids"] == ["p1", "p2"]
 
 
@@ -113,3 +116,20 @@ def test_chat_request_rejects_more_than_ten_selected_ids() -> None:
             message="Analyze these.",
             selected_parcel_ids=[str(index) for index in range(11)],
         )
+
+
+def test_chat_forwards_selected_refinement_id(monkeypatch) -> None:
+    FakeStore.writes = []
+    monkeypatch.setattr(memory.store, "PostgresStore", FakeStore)
+    monkeypatch.setattr(chat_module, "A2ACrewClient", FakeA2AClient)
+
+    request = SimpleNamespace(state=SimpleNamespace(run_id="run-2"))
+    payload = chat_module.ChatRequestModel(
+        session_id="session-1",
+        message="Apply City: Anna",
+        selected_refinement_id="city:anna",
+    )
+
+    asyncio.run(chat_module.chat(request, payload))
+
+    assert FakeA2AClient.last_context["selected_refinement_id"] == "city:anna"

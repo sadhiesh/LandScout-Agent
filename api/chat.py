@@ -44,6 +44,22 @@ class ChatRequestModel(BaseModel):
         max_length=CANDIDATE_LIMIT,
         description="Property IDs selected from the pending Scout candidate set.",
     )
+    selected_refinement_id: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=120,
+        description="Facet refinement option selected from the latest pending narrowing step.",
+    )
+    selected_refinement_ids: list[str] | None = Field(
+        default=None,
+        min_length=1,
+        max_length=20,
+        description=(
+            "Multiple facet refinement options selected from the latest pending "
+            "narrowing step's facet groups, applied together in one turn. Takes "
+            "precedence over selected_refinement_id when both are set."
+        ),
+    )
     llm_provider: str | None = None  # LLM provider (gateway, openrouter, etc.)
     llm_model: str | None = None  # Model identifier for the selected provider
     
@@ -82,6 +98,8 @@ async def chat(request: Request, payload: ChatRequestModel) -> dict[str, Any]:
     user_id = payload.user_id
     skip_cache = payload.skip_cache
     selected_parcel_ids = payload.selected_parcel_ids
+    selected_refinement_id = payload.selected_refinement_id
+    selected_refinement_ids = payload.selected_refinement_ids
     
     # Validate LLM provider/model selection
     try:
@@ -115,6 +133,8 @@ async def chat(request: Request, payload: ChatRequestModel) -> dict[str, Any]:
                 "user_id": user_id,
                 "skip_cache": skip_cache,
                 "selected_parcel_ids": selected_parcel_ids,
+                "selected_refinement_id": selected_refinement_id,
+                "selected_refinement_ids": selected_refinement_ids,
                 "llm_provider": llm_provider,
                 "llm_model": llm_model,
             },
@@ -158,6 +178,8 @@ async def chat(request: Request, payload: ChatRequestModel) -> dict[str, Any]:
                 "shortlist": result.get("shortlist", []),
                 "candidates": result.get("candidates", []),
                 "candidate_analysis": result.get("candidate_analysis"),
+                "refinement_options": result.get("refinement_options", []),
+                "narrowing_analysis": result.get("narrowing_analysis"),
                 "candidate_limit": result.get("candidate_limit", CANDIDATE_LIMIT),
                 "total_matching": result.get("total_matching", 0),
                 "criteria": result.get("criteria", {}),
@@ -168,6 +190,10 @@ async def chat(request: Request, payload: ChatRequestModel) -> dict[str, Any]:
                     "awaiting_clarification", False
                 ),
             }
+            
+            # Include error field if Scout failed, so session context loader skips this turn
+            if result.get("error"):
+                message_payload["error"] = result["error"]
             
             # A clarifying question carries the criteria it is waiting on, so
             # the next turn can merge the user's answer onto them instead of

@@ -1,0 +1,164 @@
+.panel {
+  margin-top: 0.875rem;
+  padding: 0.9rem;
+  border: 1px solid var(--border-muted);
+  border-radius: 16px;
+  background: var(--surface-raised);
+}
+
+.summary {
+  margin: 0 0 0.5rem;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.hint {
+  margin: 0 0 0.85rem;
+  color: var(--text-tertiary);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.groups {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.group {
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  background: var(--surface-default);
+  padding: 0.65rem 0.8rem 0.75rem;
+  margin: 0;
+}
+
+.groupLegend {
+  padding: 0;
+  color: var(--text-tertiary);
+  font-size: 0.75rem;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.4rem;
+}
+
+.optionList {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.optionRow {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.optionRow:hover {
+  background: var(--surface-hover);
+}
+
+.optionRow[data-checked] {
+  background: var(--accent-subtle);
+}
+
+.optionInput {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin: 0.1rem 0 0;
+  accent-color: var(--accent-primary);
+  cursor: pointer;
+}
+
+.optionLabel {
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.optionCount {
+  margin-left: auto;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.moreFilters {
+  margin-top: 0.7rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  background: var(--surface-default);
+  overflow: hidden;
+}
+
+.moreFiltersSummary {
+  padding: 0.6rem 0.8rem;
+  font-size: 0.85rem;
+  font-weight: 650;
+  color: var(--text-secondary);
+  cursor: pointer;
+  list-style: none;
+}
+
+.moreFiltersSummary::-webkit-details-marker {
+  display: none;
+}
+
+.moreFilters .groups {
+  padding: 0 0.8rem 0.8rem;
+}
+
+.note {
+  margin: 0.75rem 0 0;
+  color: var(--text-tertiary);
+  font-size: 0.85rem;
+}
+
+.applyRow {
+  margin-top: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.9rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.selectedCount {
+  color: var(--text-tertiary);
+  font-size: 0.85rem;
+}
+
+.applyButton {
+  border: 1px solid var(--accent-primary);
+  border-radius: 999px;
+  background: var(--accent-primary);
+  color: var(--accent-on-primary);
+  padding: 0.55rem 1.1rem;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.applyButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.applyButton:focus-visible,
+.optionInput:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+@media (max-width: 720px) {
+  .applyRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

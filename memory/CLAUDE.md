@@ -9,6 +9,7 @@
 | `sessions` — one per user conversation | Active session pointer |
 | `runs` — one per pipeline execution, with status | Trace pub/sub channel |
 | `criteria` — the parsed criteria for a run | In-flight scratchpad for the current run |
+| `searches` — Scout search URL, total count, listings, and raw facet sections for a run | |
 | `parcels` — candidates returned by Scout | Partial worker results before the run commits |
 | `enrichments` — per-parcel facts + `sources_used` | |
 | `scores` — score, per-dimension breakdown, rationale, highlights, drawbacks, not_assessed, considerations | |

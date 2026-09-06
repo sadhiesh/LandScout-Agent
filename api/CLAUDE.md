@@ -4,11 +4,12 @@ FastAPI on `:8000`. This is the **only** thing the UI talks to. Three categories
 
 | Route | Behavior |
 | --- | --- |
-| `POST /chat` | Invokes the Supervisor via `asyncio.to_thread()` (to avoid blocking the event loop) and returns the result. Accepts optional `selected_parcel_ids` (1–10) from a pending candidate set, plus optional `llm_provider` / `llm_model` for per-request model selection. The product surface. Never exposes a raw tool or adapter function. |
+| `POST /chat` | Invokes the Supervisor via `asyncio.to_thread()` (to avoid blocking the event loop) and returns the result. Accepts optional `selected_parcel_ids` (1–10) for legacy pending parcel-selection turns, optional `selected_refinement_id` / `selected_refinement_ids` (plural takes precedence) for one or more options chosen from the latest pending facet-narrowing turn, plus optional `llm_provider` / `llm_model` for per-request model selection. The product surface. Never exposes a raw tool or adapter function. |
 | `GET /config/models` | **Read-only.** Returns the LLM provider and model catalog from `config/models.yaml` plus per-provider availability flags (e.g., `openrouter` unavailable if `OPENROUTER_API_KEY` is empty). No agent invocation, no live external call. |
 | `GET /events/{run_id}` | SSE stream of trace events for the live run, fanned out from the in-process event bus. Replays buffered events then streams new ones with heartbeat. |
 | `POST /internal/trace` | Internal-only ingest for worker agents to post trace events to the bus. Not exposed to UI. |
 | `GET /debug/*` | **Read-only.** Serves what was already captured in Postgres or the event bus replay buffer. |
+| `GET /debug/sessions/{session_id}/trace` | **Read-only.** All persisted trace events across every run in a session, ordered by timestamp — the session-scoped counterpart to `GET /debug/runs/{run_id}/trace`. Backs the Observability panel's cross-turn history (see `ui-next/CLAUDE.md`). |
 | `GET /debug/logs/stream` | SSE stream of all service logs (api, supervisor, scout, enricher, scorer, mcp), tailed in real-time. |
 | `GET /debug/logs/tail` | Backfill of recent log lines for a service or all services. |
 | `GET /health` | Liveness only. |
@@ -32,7 +33,7 @@ A `/debug/*` endpoint never triggers an agent invocation and never makes a live 
 ## Files
 
 - `main.py` — app assembly, middleware, `run_id` injection, `/health`, static file serving for the React UI at `/static/dist/`.
-- `chat.py` — wraps the Supervisor invoke (via `asyncio.to_thread()`) and streams responses. Validates `llm_provider` / `llm_model` and forwards them to the supervisor.
+- `chat.py` — wraps the Supervisor invoke (via `asyncio.to_thread()`) and streams responses. Validates `llm_provider` / `llm_model`, forwards structured parcel or refinement selections to the supervisor, and persists the final assistant payload.
 - `config_routes.py` — catalog endpoint (`GET /config/models`). Read-only, no agent invocation.
 - `events.py` — in-process event bus for trace events; `/internal/trace` ingest, `/events/{run_id}` SSE fan-out.
 - `logs_stream.py` — SSE streaming of all service logs for the Raw Logs tab.

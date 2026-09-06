@@ -43,6 +43,7 @@ from agents.supervisor.criteria_gate import (
     is_search_confirmation,
     is_search_rejection,
     merge_criteria,
+    strip_generic_keyword_terms,
 )
 
 logging.basicConfig(
@@ -66,6 +67,7 @@ def compute_criteria_fingerprint(criteria: dict[str, Any]) -> str:
 
 
 CRITERIA_CONFIRMATION_KIND = "criteria_confirmation"
+FACET_NARROWING_KIND = "facet_narrowing"
 
 _CRITERIA_LABELS = {
     "state": "State",
@@ -207,9 +209,27 @@ def _parse_criteria_with_llm(
     """
     from tools.scoring import get_defaults
     from pathlib import Path
+    from landwatch.filters import FILTER_CATALOG
     
     # Start with defaults from criteria.yaml
     defaults = get_defaults()
+    
+    # Extract catalog values for structured fields
+    def get_catalog_values(field_name: str) -> str:
+        """Format catalog values as a comma-separated list for the prompt."""
+        spec = FILTER_CATALOG.get(field_name)
+        if not spec or not spec.values:
+            return "[]"
+        values = [v.value for v in spec.values]
+        return f"list of: {', '.join(values)}"
+    
+    catalog_substitutions = {
+        "property_type_values": get_catalog_values("property_types"),
+        "activity_values": get_catalog_values("activities"),
+        "geography_values": get_catalog_values("geographies"),
+        "land_use_values": get_catalog_values("land_uses"),
+        "housing_type_values": get_catalog_values("housing_types"),
+    }
     
     # Load the criteria parsing skill
     skill_path = Path(__file__).parent.parent.parent / "skills" / "criteria-parsing" / "SKILL.md"
@@ -251,6 +271,10 @@ def _parse_criteria_with_llm(
             json.dumps(current_results or [], indent=2, default=str),
         )
     )
+    
+    # Inject catalog values
+    for placeholder, value in catalog_substitutions.items():
+        prompt = prompt.replace(f"{{{placeholder}}}", value)
     
     # Use the supervisor agent to parse
     agent = create_supervisor_agent(provider=provider, model=model)
@@ -325,6 +349,74 @@ def _parse_criteria_with_llm(
                 # Keep the raw city name
                 parsed["city"] = city_raw.lower()
         
+        # Normalize and validate enum fields against catalog
+        # Move unsupported user-stated feature terms to keyword
+        from landwatch.filters import FILTER_CATALOG
+        
+        enum_fields = ["property_types", "activities", "geographies", "land_uses", "housing_types"]
+        fallback_terms = []  # Collect unsupported terms for keyword
+        
+        for field in enum_fields:
+            raw_list = parsed.get(field)
+            if not raw_list:
+                continue
+            
+            spec = FILTER_CATALOG.get(field)
+            if not spec or not spec.values:
+                continue
+            
+            valid_values = {v.value for v in spec.values}
+            validated = []
+            
+            for term in raw_list:
+                if term in valid_values:
+                    validated.append(term)
+                else:
+                    # Move to keyword instead of rejecting
+                    fallback_terms.append(term)
+                    logger.info(
+                        f"[{run_id}] Rerouted unsupported {field} term '{term}' to keyword"
+                    )
+            
+            parsed[field] = validated if validated else None
+        
+        # Merge fallback terms into keyword, preserving existing keyword value
+        if fallback_terms:
+            existing_keyword = parsed.get("keyword") or ""
+            all_keywords = [existing_keyword] + fallback_terms
+            # Deduplicate while preserving order
+            seen = set()
+            unique_keywords = []
+            for kw in all_keywords:
+                kw_lower = kw.lower().strip()
+                if kw_lower and kw_lower not in seen:
+                    seen.add(kw_lower)
+                    unique_keywords.append(kw)
+            parsed["keyword"] = " ".join(unique_keywords) if unique_keywords else None
+            
+            emitter.emit(
+                "thought",
+                f"Rerouted {len(fallback_terms)} unsupported term(s) to keyword: {', '.join(fallback_terms)}",
+                {"fallback_terms": fallback_terms, "final_keyword": parsed["keyword"]},
+            )
+
+        # Strip generic purpose/intent words from keyword (e.g. "investment",
+        # "resale") — these describe the buyer's goal, not a land feature, so
+        # they produce meaningless LandWatch literal-text matches.
+        raw_keyword = parsed.get("keyword")
+        cleaned_keyword = strip_generic_keyword_terms(raw_keyword)
+        if cleaned_keyword != raw_keyword:
+            dropped = raw_keyword or ""
+            parsed["keyword"] = cleaned_keyword
+            emitter.emit(
+                "thought",
+                f"Dropped generic term(s) from keyword: '{dropped}' -> '{cleaned_keyword}'",
+                {"raw_keyword": raw_keyword, "cleaned_keyword": cleaned_keyword},
+            )
+            logger.info(
+                f"[{run_id}] Dropped generic keyword term(s): '{raw_keyword}' -> '{cleaned_keyword}'"
+            )
+
         # Build provenance map - track which fields came from user
         all_fields = [
             "state", "county", "city", "region",
@@ -604,6 +696,7 @@ def _clarification_payload(
         "missing": gate.missing,
         "confirmed_fields": gate.confirmed_fields,
         "relax_suggestion": gate.relax_suggestion,
+        "refinement_options": gate.refinement_options,
         "original_run_id": original_run_id,  # NEW: For parent_run_id linking
     }
     if candidate_run_id:
@@ -670,6 +763,67 @@ def _resolve_candidate_selection(
     return [by_id[item] for item in unique_ids], search, None
 
 
+def _resolve_refinement_selection(
+    pending: dict[str, Any],
+    selected_refinement_id: str,
+) -> tuple[dict[str, Any] | None, dict[str, Any] | None, str | None]:
+    """Load and validate one structured narrowing option from pending state."""
+    options = pending.get("refinement_options") or []
+    by_id = {
+        str(option.get("id")): option
+        for option in options
+        if option.get("id") is not None
+    }
+    selected = by_id.get(str(selected_refinement_id))
+    if not selected:
+        return (
+            None,
+            None,
+            "That narrowing option is no longer available. Please choose one of the current filters or tell me what to tighten.",
+        )
+    narrowed = merge_criteria(
+        pending.get("pending_criteria") or {},
+        selected.get("criteria_patch") or {},
+        selected.get("clear_fields") or [],
+    )
+    return narrowed, selected, None
+
+
+def _resolve_refinement_selections(
+    pending: dict[str, Any],
+    selected_refinement_ids: list[str],
+) -> tuple[dict[str, Any] | None, list[dict[str, Any]], str | None]:
+    """Load and validate several structured narrowing options at once.
+
+    Backs the multi-select facet UI's single "Apply filters" action: each id
+    still resolves through the exact same validated criteria_patch/
+    clear_fields a single-select apply would use, folded onto the pending
+    criteria in the order chosen via `merge_criteria` (so, e.g., picking a
+    price band and an acreage band together applies both).
+    """
+    options = pending.get("refinement_options") or []
+    by_id = {
+        str(option.get("id")): option
+        for option in options
+        if option.get("id") is not None
+    }
+    chosen = [by_id[str(raw_id)] for raw_id in selected_refinement_ids if str(raw_id) in by_id]
+    if not chosen:
+        return (
+            None,
+            [],
+            "None of those narrowing options are still available. Please choose from the current filters or tell me what to tighten.",
+        )
+    narrowed = pending.get("pending_criteria") or {}
+    for selected in chosen:
+        narrowed = merge_criteria(
+            narrowed,
+            selected.get("criteria_patch") or {},
+            selected.get("clear_fields") or [],
+        )
+    return narrowed, chosen, None
+
+
 def orchestrate_pipeline(
     session_id: str,
     run_id: str,
@@ -677,6 +831,8 @@ def orchestrate_pipeline(
     user_id: Optional[str] = None,
     skip_cache: bool = False,
     selected_parcel_ids: Optional[list[str]] = None,
+    selected_refinement_id: str | None = None,
+    selected_refinement_ids: Optional[list[str]] = None,
     llm_provider: str | None = None,
     llm_model: str | None = None,
 ) -> dict[str, Any]:
@@ -690,6 +846,11 @@ def orchestrate_pipeline(
         user_message: User's natural language request
         user_id: Optional user ID (if already identified)
         selected_parcel_ids: Optional property IDs chosen from a pending search
+        selected_refinement_id: Optional single narrowing option chosen from a
+            pending search (legacy single-select apply)
+        selected_refinement_ids: Optional multiple narrowing options chosen
+            from a pending search's facet groups in one "Apply filters" click.
+            Takes precedence over `selected_refinement_id` when both are set.
         llm_provider: Optional LLM provider override
         llm_model: Optional LLM model override
         
@@ -763,7 +924,14 @@ def orchestrate_pipeline(
     parent_run_id = pending.get("original_run_id") if pending else None
     selection_source_run_id = pending.get("candidate_run_id") if pending else None
     selected_parcel_ids = selected_parcel_ids or []
+    selected_refinement_id = selected_refinement_id or None
+    selected_refinement_ids = [
+        str(raw_id) for raw_id in (selected_refinement_ids or []) if str(raw_id).strip()
+    ]
     selection_requested = bool(selected_parcel_ids)
+    refinement_requested = bool(selected_refinement_id) or bool(selected_refinement_ids)
+    refinement_error: str | None = None
+    selected_refinement: dict[str, Any] | None = None
     # Accept confirmation for both explicit criteria confirmation AND clarification responses
     confirmation_approved = (
         pending_kind in (CRITERIA_CONFIRMATION_KIND, "criteria_clarification")
@@ -775,7 +943,11 @@ def orchestrate_pipeline(
         and is_search_rejection(user_message)
     )
     turn_resolution: dict[str, Any] = {
-        "intent": "selection" if selection_requested else "search",
+        "intent": (
+            "selection"
+            if selection_requested
+            else ("refinement" if refinement_requested else "search")
+        ),
         "answer": None,
         "clear_fields": [],
     }
@@ -792,6 +964,60 @@ def orchestrate_pipeline(
             f"✓ Using {len(selected_parcel_ids)} selected parcels",
             {"selected_parcel_ids": selected_parcel_ids},
         )
+    elif refinement_requested and pending_kind == FACET_NARROWING_KIND and pending.get("pending_criteria"):
+        criteria = dict(pending["pending_criteria"])
+        provenance = dict(pending.get("pending_provenance") or {})
+        if selected_refinement_ids:
+            resolved_criteria, selected_refinements, refinement_error = _resolve_refinement_selections(
+                pending,
+                selected_refinement_ids,
+            )
+        else:
+            resolved_criteria, single_selection, refinement_error = _resolve_refinement_selection(
+                pending,
+                selected_refinement_id,
+            )
+            selected_refinements = [single_selection] if single_selection else []
+        if resolved_criteria is not None and selected_refinements:
+            criteria = resolved_criteria
+            for selected_refinement in selected_refinements:
+                for field_name in selected_refinement.get("clear_fields") or []:
+                    if criteria.get(field_name) is None:
+                        provenance[field_name] = "cleared"
+                for field_name, value in (selected_refinement.get("criteria_patch") or {}).items():
+                    if value not in (None, [], ""):
+                        provenance[field_name] = "user"
+            applied_summary = "; ".join(
+                f"{selected_refinement.get('section')}: {selected_refinement.get('label')}"
+                for selected_refinement in selected_refinements
+            )
+            add_step(
+                "narrowing",
+                f"✓ Applied {applied_summary}",
+                {
+                    "selected_refinement_id": selected_refinement_id,
+                    "selected_refinement_ids": selected_refinement_ids,
+                    "criteria": criteria,
+                },
+            )
+        else:
+            add_step(
+                "narrowing",
+                "⚠️ Could not apply the chosen narrowing option(s)",
+                {
+                    "selected_refinement_id": selected_refinement_id,
+                    "selected_refinement_ids": selected_refinement_ids,
+                    "error": refinement_error,
+                },
+            )
+        pipeline_timing["criteria_parse_ms"] = 0.0
+    elif refinement_requested:
+        criteria = dict(pending_criteria)
+        provenance = dict(pending.get("pending_provenance") or {})
+        refinement_error = (
+            "That narrowing option is no longer available. Please choose one of the current filters or tell me what to tighten."
+        )
+        pipeline_timing["criteria_parse_ms"] = 0.0
     elif confirmation_approved:
         criteria = dict(pending_criteria)
         provenance = dict(pending.get("pending_provenance") or {})
@@ -842,11 +1068,13 @@ def orchestrate_pipeline(
         # These intents provide direct answers without modifying search state
         criteria = dict(current_criteria)
         provenance = dict(current_provenance)
+    elif refinement_requested:
+        pending = {}
     elif confirmation_approved:
         pending = {}
     elif confirmation_cancelled:
         pending = {}
-    elif pending.get("pending_criteria") and not selection_requested:
+    elif pending.get("pending_criteria") and not selection_requested and not refinement_requested:
         criteria = merge_criteria(
             pending["pending_criteria"],
             criteria,
@@ -871,7 +1099,7 @@ def orchestrate_pipeline(
         )
         for note in notes:
             add_step("assumed", f"✓ {note.capitalize()}")
-    elif current_criteria and not selection_requested:
+    elif current_criteria and not selection_requested and not refinement_requested:
         criteria = merge_criteria(current_criteria, criteria, clear_fields)
         provenance = {
             **current_provenance,
@@ -978,6 +1206,27 @@ def orchestrate_pipeline(
         from tools.scoring import get_shortlist_size
 
         candidate_limit = get_shortlist_size()
+        if refinement_requested and refinement_error:
+            from datetime import datetime
+
+            pg.update_run_status(run_id, "awaiting_clarification", datetime.utcnow())
+            emitter.close()
+            return {
+                "message": refinement_error,
+                "shortlist": [],
+                "criteria": pending_criteria or criteria,
+                "criteria_provenance": pending.get("pending_provenance") or provenance,
+                "total_matching": 0,
+                "awaiting_clarification": True,
+                "refinement_options": pending.get("refinement_options") or [],
+                "narrowing_analysis": {
+                    "common_conditions": [],
+                    "recommendations": [],
+                },
+                "clarification": pending,
+                "journey_steps": journey_steps,
+            }
+
         if confirmation_cancelled:
             from datetime import datetime
 
@@ -1060,7 +1309,7 @@ def orchestrate_pipeline(
         # was given; anything searchable goes through and is judged by Stage 2
         # against the real match count.
         gate = None
-        if not selection_requested and not confirmation_approved:
+        if not selection_requested and not refinement_requested and not confirmation_approved:
             from functools import partial
             from agents.supervisor.criteria_gate import _default_llm as _gate_llm
             
@@ -1107,6 +1356,7 @@ def orchestrate_pipeline(
 
         if (
             not selection_requested
+            and not refinement_requested
             and not confirmation_approved
             and turn_resolution["intent"] in {"search", "reset"}
         ):
@@ -1270,6 +1520,7 @@ def orchestrate_pipeline(
                 }
 
             raw_listings = parcels
+            scout_facets = source_search.get("facets", [])
             search_url = source_search.get("search_url", "")
             total_matching = source_search.get("total_matching", len(parcels))
             scout_error = None
@@ -1299,12 +1550,12 @@ def orchestrate_pipeline(
                 task_description=(
                     f"Search for land parcels matching these criteria: {json.dumps(scout_criteria)}. "
                     "Use the landwatch_search tool and return its output EXACTLY as-is. "
-                    "Do not rename fields - preserve 'listings', 'search_url', "
-                    "'total_matching', 'returned'."
+                    "Do not rename fields - preserve 'listings', 'facets', "
+                    "'search_url', 'total_matching', 'returned'."
                 ),
                 expected_output=(
-                    "JSON with 'listings' array (not 'parcels'), search_url, "
-                    "total_matching, returned"
+                    "JSON with 'listings' array (not 'parcels'), facets, "
+                    "search_url, total_matching, returned"
                 ),
                 context={
                     "criteria": criteria,
@@ -1318,6 +1569,7 @@ def orchestrate_pipeline(
             scout_data = extract_json(scout_response)
             # Accept the legacy alias defensively; Scout's contract is listings.
             raw_listings = scout_data.get("parcels") or scout_data.get("listings", [])
+            scout_facets = scout_data.get("facets") or []
             search_url = scout_data.get("search_url") or scout_data.get("url", "")
             total_matching = scout_data.get("total_matching", 0)
             scout_error = scout_data.get("error")
@@ -1413,6 +1665,7 @@ def orchestrate_pipeline(
                 total_matching=total_matching,
                 returned=len(parcels),
                 listings=parcels,
+                facets=scout_facets,
             )
         
         if not parcels:
@@ -1497,13 +1750,19 @@ def orchestrate_pipeline(
             with PostgresStore() as pg:
                 pg.update_run_status(run_id, "completed", datetime.utcnow())
 
-            return {
+            result = {
                 "message": assistant_msg,
                 "shortlist": [],
                 "criteria": criteria,
                 "criteria_provenance": provenance,
                 "journey_steps": journey_steps,
             }
+            
+            # Include error field so session context loader skips this failed turn
+            if scout_error:
+                result["error"] = scout_error
+            
+            return result
         
         # Stage 2 is a hard guard on the records Scout actually returned.
         # More than the shortlist size never reaches Enricher or Scorer.
@@ -1512,6 +1771,7 @@ def orchestrate_pipeline(
             parcels=parcels,
             candidate_limit=candidate_limit,
             total_matching=total_matching,
+            facets=scout_facets,
             provenance=provenance,
             round_num=clarify_round,
             emitter=emitter,
@@ -1520,11 +1780,12 @@ def orchestrate_pipeline(
         if not breadth.sufficient:
             add_step(
                 "clarifying",
-                f"💬 Select up to {candidate_limit} of {len(parcels)} returned parcels",
+                f"💬 Need one more filter to narrow {total_matching} matches",
                 {
                     "returned_count": len(parcels),
                     "candidate_limit": candidate_limit,
                     "total_matching": total_matching,
+                    "refinement_options": breadth.refinement_options,
                 },
             )
             
@@ -1542,12 +1803,11 @@ def orchestrate_pipeline(
             return {
                 "message": breadth.question,
                 "shortlist": [],
-                "candidates": parcels,
-                "candidate_analysis": {
+                "refinement_options": breadth.refinement_options,
+                "narrowing_analysis": {
                     "common_conditions": breadth.common_conditions,
                     "recommendations": breadth.recommendations,
                 },
-                "candidate_limit": candidate_limit,
                 "criteria": criteria,
                 "criteria_provenance": provenance,
                 "total_matching": total_matching,
@@ -1559,8 +1819,7 @@ def orchestrate_pipeline(
                     2,
                     breadth,
                     run_id,
-                    candidate_run_id=run_id,
-                    kind="candidate_selection",
+                    kind=FACET_NARROWING_KIND,
                 ),
                 "journey_steps": journey_steps,
             }
@@ -1863,6 +2122,8 @@ def main() -> None:
             user_message = context.get("user_message")
             user_id = context.get("user_id")
             selected_parcel_ids = context.get("selected_parcel_ids")
+            selected_refinement_id = context.get("selected_refinement_id")
+            selected_refinement_ids = context.get("selected_refinement_ids")
             llm_provider = context.get("llm_provider")
             llm_model = context.get("llm_model")
             
@@ -1894,6 +2155,8 @@ def main() -> None:
                 user_id=user_id,
                 skip_cache=skip_cache,
                 selected_parcel_ids=selected_parcel_ids,
+                selected_refinement_id=selected_refinement_id,
+                selected_refinement_ids=selected_refinement_ids,
                 llm_provider=llm_provider,
                 llm_model=llm_model,
             )

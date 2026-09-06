@@ -1,0 +1,154 @@
+{
+  "siteId": 1113,
+  "activeFilters": [
+    {
+      "displayText": "Texas",
+      "relativeUrlPath": "/collin-county/acres-5-20",
+      "count": 0,
+      "id": 0
+    },
+    {
+      "displayText": "County: Collin County",
+      "relativeUrlPath": "/texas-land-for-sale/acres-5-20",
+      "count": 0,
+      "id": 0
+    },
+    {
+      "displayText": "5 - 20 Acres",
+      "relativeUrlPath": "/texas-land-for-sale/collin-county",
+      "count": 0,
+      "id": 0
+    }
+  ],
+  "filterSections": [
+    {
+      "section": "City",
+      "filterLinks": [
+        {
+          "displayText": "Anna",
+          "relativeUrlPath": "/texas-land-for-sale/anna/acres-5-20",
+          "count": 44,
+          "id": 698
+        },
+        {
+          "displayText": "McKinney",
+          "relativeUrlPath": "/texas-land-for-sale/mckinney/acres-5-20",
+          "count": 39,
+          "id": 16744
+        }
+      ]
+    },
+    {
+      "section": "Property Types",
+      "filterLinks": [
+        {
+          "displayText": "Undeveloped",
+          "relativeUrlPath": "/texas-land-for-sale/collin-county/undeveloped-land/acres-5-20",
+          "count": 170,
+          "id": 32
+        },
+        {
+          "displayText": "House",
+          "relativeUrlPath": "/texas-land-for-sale/collin-county/homes/acres-5-20",
+          "count": 81,
+          "id": 8192
+        }
+      ]
+    },
+    {
+      "section": "Residence",
+      "filterLinks": [
+        {
+          "displayText": "Yes",
+          "relativeUrlPath": "/texas-land-for-sale/collin-county/with-residence/acres-5-20",
+          "count": 81,
+          "id": 0
+        },
+        {
+          "displayText": "No",
+          "relativeUrlPath": "/texas-land-for-sale/collin-county/no-residence/acres-5-20",
+          "count": 200,
+          "id": 0
+        }
+      ]
+    },
+    {
+      "section": "Price",
+      "filterLinks": [
+        {
+          "displayText": "$250,000 - $499,999",
+          "relativeUrlPath": "/texas-land-for-sale/collin-county/price-250000-499999/acres-5-20",
+          "count": 82,
+          "id": 0
+        },
+        {
+          "displayText": "$500,000 - $749,999",
+          "relativeUrlPath": "/texas-land-for-sale/collin-county/price-500000-749999/acres-5-20",
+          "count": 74,
+          "id": 0
+        }
+      ]
+    },
+    {
+      "section": "Availability",
+      "filterLinks": [
+        {
+          "displayText": "Available",
+          "relativeUrlPath": "/texas-land-for-sale/collin-county/acres-5-20/under-contract",
+          "count": 261,
+          "id": 0
+        },
+        {
+          "displayText": "Under Contract",
+          "relativeUrlPath": "/texas-land-for-sale/collin-county/acres-5-20/available",
+          "count": 20,
+          "id": 0
+        }
+      ]
+    }
+  ],
+  "searchResults": {
+    "totalCount": 281,
+    "paginationData": {
+      "locationName": "Collin County, TX",
+      "nextLink": "/texas-land-for-sale/collin-county/acres-5-20/page-2"
+    },
+    "propertyResults": [
+      {
+        "lwPropertyId": 427660637,
+        "id": 28258122,
+        "title": "5.45 Acres in Collin County",
+        "canonicalUrl": "/collin-county-texas-undeveloped-land-for-sale/pid/427660637",
+        "price": 495000,
+        "priceDisplay": "$495,000",
+        "pricePerAcre": 90825.69,
+        "acres": 5.45,
+        "acresDisplay": "5.45 acres",
+        "address": "123 County Road",
+        "city": "Anna",
+        "county": "Collin County",
+        "state": "Texas",
+        "stateAbbreviation": "TX",
+        "zip": "75409",
+        "latitude": 33.349,
+        "longitude": -96.55,
+        "types": [
+          "Undeveloped Land"
+        ],
+        "beds": 0.0,
+        "baths": 0.0,
+        "homesqft": 0,
+        "hasHouse": false,
+        "description": "Undeveloped acreage in Collin County.",
+        "imageCount": 1,
+        "imageIds": [
+          123456789
+        ],
+        "brokerName": "Test Broker",
+        "brokerCompany": "Test Realty",
+        "insertDate": "2026-08-01T00:00:00",
+        "lastUpdated": "2026-08-15T00:00:00"
+      }
+    ]
+  }
+}

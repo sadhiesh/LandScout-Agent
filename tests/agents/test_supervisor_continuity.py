@@ -14,6 +14,7 @@ from agents.supervisor.supervisor import (
     _has_active_criteria,
     _load_session_context,
     _resolve_candidate_selection,
+    _resolve_refinement_selection,
     compute_criteria_fingerprint,
 )
 
@@ -175,7 +176,12 @@ def test_session_context_does_not_pair_new_criteria_with_stale_results(
                     "price_max": "user",
                 },
                 "shortlist": [],
-                "candidates": [_candidate("new")],
+                "awaiting_clarification": True,
+                "clarification": {
+                    "kind": "facet_narrowing",
+                    "pending_criteria": {"county": "collin", "price_max": 300_000},
+                    "refinement_options": [{"id": "city:698", "section": "City", "label": "Anna", "count": 8}],
+                },
             },
         },
     ]
@@ -183,9 +189,9 @@ def test_session_context_does_not_pair_new_criteria_with_stale_results(
 
     context = _load_session_context("session-1")
 
-    assert context["criteria"]["price_max"] == 300_000
-    assert context["provenance"]["price_max"] == "user"
-    assert context["shortlist"] == []
+    assert context["criteria"] == {"county": "collin"}
+    assert context["provenance"] == {"county": "user"}
+    assert context["shortlist"][0]["property_id"] == "old"
 
 
 def test_cached_rows_are_rebuilt_as_canonical_scored_parcels() -> None:
@@ -276,6 +282,33 @@ def test_candidate_selection_cannot_cross_sessions(monkeypatch) -> None:
 
     assert parcels == []
     assert "no longer available" in error
+
+
+def test_refinement_selection_applies_stored_patch() -> None:
+    pending = {
+        "pending_criteria": {"state": "texas", "county": "collin", "price_min": 100000, "price_max": 1000000},
+        "refinement_options": [
+            {
+                "id": "price:250000-499999",
+                "section": "Price",
+                "label": "$250,000 - $499,999",
+                "count": 8,
+                "criteria_patch": {"price_min": 250000, "price_max": 499999},
+                "clear_fields": ["price_min", "price_max"],
+            }
+        ],
+    }
+
+    criteria, option, error = _resolve_refinement_selection(pending, "price:250000-499999")
+
+    assert error is None
+    assert option is not None
+    assert criteria == {
+        "state": "texas",
+        "county": "collin",
+        "price_min": 250000,
+        "price_max": 499999,
+    }
 
 
 def test_search_amendment_preserves_prior_criteria_and_waits_for_confirmation(
@@ -877,9 +910,19 @@ def test_oversized_scout_result_never_dispatches_expensive_workers(
         "assess_breadth",
         lambda **kwargs: GateResult(
             sufficient=False,
-            question="Select up to 10.",
+            question="LandWatch still shows too many matches.",
             common_conditions=["All are in Collin County."],
-            recommendations=["Select up to 10 parcels."],
+            recommendations=["City: Anna (8 matches)."],
+            refinement_options=[
+                {
+                    "id": "city:698",
+                    "section": "City",
+                    "label": "Anna",
+                    "count": 8,
+                    "criteria_patch": {"city": "anna"},
+                    "clear_fields": [],
+                }
+            ],
         ),
     )
 
@@ -890,12 +933,13 @@ def test_oversized_scout_result_never_dispatches_expensive_workers(
         user_id="user-1",
     )
 
-    assert len(result["candidates"]) == 11
+    assert result["refinement_options"][0]["id"] == "city:698"
     assert result["shortlist"] == []
     assert len(Client.calls) == 1
     assert ":8002" in Client.calls[0]
     assert Client.contexts[0]["criteria"] == confirmed_criteria
     assert result["criteria_provenance"]["property_types"] == "user"
+    assert result["clarification"]["kind"] == "facet_narrowing"
 
 
 def test_scout_tool_error_is_reported_not_treated_as_no_matches(
@@ -995,3 +1039,33 @@ def test_scout_tool_error_is_reported_not_treated_as_no_matches(
     assert "BlockedError: upstream unavailable" in result["message"]
     assert "https://example.test/search" in result["message"]
     assert result["shortlist"] == []
+
+
+def test_session_context_skips_failed_turns_with_error_field(monkeypatch) -> None:
+    """Failed Scout runs must not become the baseline for the next turn's merge."""
+    FakeStore.messages = [
+        {
+            "role": "assistant",
+            "payload": {
+                "criteria": {"county": "collin", "price_max": 500_000},
+                "shortlist": [_candidate("p1")],
+            },
+        },
+        {
+            "role": "assistant",
+            "payload": {
+                "criteria": {"county": "collin", "geographies": ["waterfront"]},
+                "error": "unknown geographies 'waterfront'",
+                "shortlist": [],
+            },
+        },
+    ]
+    monkeypatch.setattr(memory.store, "PostgresStore", FakeStore)
+
+    context = _load_session_context("session-1")
+
+    # Should recover the last successful turn, skipping the failed one
+    assert context["criteria"]["county"] == "collin"
+    assert context["criteria"]["price_max"] == 500_000
+    assert "geographies" not in context["criteria"]
+    assert context["shortlist"][0]["property_id"] == "p1"

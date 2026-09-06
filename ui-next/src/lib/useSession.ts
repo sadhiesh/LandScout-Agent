@@ -24,12 +24,44 @@ export interface Message {
   content: string
   payload?: {
     shortlist?: any[]
+    candidates?: any[]  // Legacy parcel-selection payloads
+    candidate_analysis?: Record<string, any>
+    refinement_options?: Array<{
+      id: string
+      section: string
+      label: string
+      count: number
+      criteria_patch?: Record<string, any>
+      clear_fields?: string[]
+      tier?: 'primary' | 'secondary'
+    }>
+    narrowing_analysis?: {
+      common_conditions?: string[]
+      recommendations?: string[]
+    }
+    candidate_limit?: number
+    awaiting_clarification?: boolean
+    clarification?: {
+      kind?: string
+      pending_criteria?: Record<string, any>
+      pending_provenance?: Record<string, string>
+      refinement_options?: Array<{
+        id: string
+        section: string
+        label: string
+        count: number
+        tier?: 'primary' | 'secondary'
+      }>
+      run_id?: string
+    }
+    error?: string  // Scout/tool error that should skip this turn
     total_matching?: number
     cached?: boolean
     journey_step?: boolean
     step_type?: string
     step_details?: Record<string, any>
     criteria?: Record<string, any>
+    criteria_provenance?: Record<string, string>
     journey?: Array<{
       kind: string
       summary: string

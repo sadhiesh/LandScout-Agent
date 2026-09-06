@@ -289,14 +289,15 @@ class PostgresStore:
         total_matching: int,
         returned: int,
         listings: list[dict[str, Any]],
+        facets: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
         """Insert a search result."""
         with self._conn.cursor() as cur:
             cur.execute(
                 """
                 INSERT INTO searches 
-                (run_id, session_id, criteria, search_url, total_matching, returned, listings)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                (run_id, session_id, criteria, search_url, total_matching, returned, listings, facets)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING *
                 """,
                 (
@@ -307,6 +308,7 @@ class PostgresStore:
                     total_matching,
                     returned,
                     json.dumps(listings),
+                    json.dumps(facets or []),
                 ),
             )
             self._conn.commit()
@@ -491,6 +493,27 @@ class PostgresStore:
                 ORDER BY ts
                 """,
                 (run_id,),
+            )
+            return cur.fetchall()
+
+    def get_trace_events_by_session(self, session_id: str) -> list[dict[str, Any]]:
+        """Fetch all trace events for every run in a session, ordered by timestamp.
+
+        Backs the session-scoped Observability history: a page reload or a
+        follow-up turn should not lose the reasoning trace from earlier turns
+        in the same conversation, only from a different session. Joins
+        through `runs` since `trace_events` keys off `run_id`, not
+        `session_id` directly (see memory/CLAUDE.md).
+        """
+        with self._conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT te.* FROM trace_events te
+                JOIN runs r ON r.run_id = te.run_id
+                WHERE r.session_id = %s
+                ORDER BY te.ts
+                """,
+                (session_id,),
             )
             return cur.fetchall()
 

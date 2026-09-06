@@ -61,17 +61,18 @@ SIZE & PRICE:
   beds_min, baths_min: minimum bedrooms/baths if house is mentioned
 
 PROPERTY TYPE (extract if mentioned):
-  property_types: list of: farms-ranches, recreational, timberland, undeveloped, 
-    commercial, hunting, horse, lakefront, oceanfront, riverfront, waterfront, 
-    homesite, house
+  property_types: {property_type_values}
 
 FEATURES (extract if mentioned):
-  keyword: free text for 'creek access', 'timber', 'cleared', 'fenced', etc.
-  activities: list of: hunting, fishing, camping, horseback-riding, boating, etc.
-  geographies: list of: waterfront, mountain, off-grid, lakefront, riverfront, 
-    beachfront, desert, island, rural, resort
-  land_uses: list of: pasture, orchard, vineyard, hobby-farm, homestead, poultry
-  housing_types: list of: cabin, barndominium, cottage, lake-house, tiny-home, etc.
+  keyword: free text for PHYSICAL LAND features and qualities only — e.g.
+    'creek access', 'timber', 'cleared', 'fenced', 'waterfront features',
+    'pond', 'view', 'hilltop', 'wooded'. Never use keyword for the buyer's
+    purpose, motive, or financing intent (investment, resale, flip, profit,
+    personal use, quick sale, cash buyer). Those are NOT land features.
+  activities: {activity_values}
+  geographies: {geography_values}
+  land_uses: {land_use_values}
+  housing_types: {housing_type_values}
 
 REQUIREMENTS (boolean, extract if mentioned):
   has_residence: true (wants house), false (no house), null (doesn't care)
@@ -85,7 +86,18 @@ RULES:
   - 'over $X' -> price_min=$X, price_max=null
   - 'hunting land' -> property_types=['hunting'] AND activities=['hunting']
   - 'with creek' -> keyword='creek'
+  - Use structured fields (property_types, activities, geographies, land_uses, 
+    housing_types) when the user's term exactly matches a supported value
+  - For feature modifiers or qualities ('waterfront features', 'pond', 'creek 
+    access'), use keyword field instead of structured fields
+  - 'waterfront property' as a type -> property_types=['waterfront']
+  - 'with waterfront features' as a quality -> keyword='waterfront'
+  - 'its for investment / resale / flipping / personal use / quick sale' ->
+    purpose statement only, not a land feature; leave keyword null
+  - DO NOT set keyword from the buyer's goal, motive, or financing plan
   - DO NOT invent criteria the user didn't mention
+  - DO NOT infer has_residence=false from 'undeveloped land' alone; only set it 
+    when the user explicitly states they want no residence or must have one
 
 Return ONLY JSON with these exact keys:
 {"_turn_intent": "search"|"reset"|"results_question"|"off_topic"|"conversational",
@@ -226,6 +238,49 @@ The user named Texas outright here, so `state` belongs in `_stated_fields`.
 Note what is missing from `_stated_fields`: `state`. "McKinney" is in Texas
 and the key is filled in accordingly, but the user never said so, and the
 agent should confirm that rather than assume it silently.
+
+### Example 4: Purpose Statement — keyword must be null
+
+**Input:** "its for investment and looking for in collin county"
+
+This turn states an investment *purpose*, not a physical land feature.
+`keyword` must stay null — "investment" is not a land descriptor and would
+produce meaningless results as a literal listing search term.
+
+**Output:**
+```json
+{
+  "_turn_intent": "search",
+  "_answer": null,
+  "_clear_fields": [],
+  "state": null,
+  "county": "collin",
+  "city": null,
+  "region": null,
+  "acres_min": null,
+  "acres_max": null,
+  "price_min": null,
+  "price_max": null,
+  "sqft_min": null,
+  "sqft_max": null,
+  "beds_min": null,
+  "baths_min": null,
+  "property_types": null,
+  "keyword": null,
+  "activities": null,
+  "geographies": null,
+  "land_uses": null,
+  "housing_types": null,
+  "has_residence": null,
+  "owner_financing": null,
+  "mineral_rights": null,
+  "hoa": null,
+  "_stated_fields": ["county"]
+}
+```
+
+"investment" is the buyer's purpose, not a land feature — `keyword` is null.
+`county` is the only stated search constraint.
 
 ## Post-Processing
 

@@ -140,3 +140,33 @@ def test_search_output_includes_geo_fields() -> None:
     listing_dict = listing.model_dump()
     for key in ("property_id", "listing_id", "latitude", "longitude", "address", "zip_code"):
         assert key in listing_dict, f"Listing model missing {key}"
+
+
+def test_run_search_output_includes_facets(monkeypatch: pytest.MonkeyPatch) -> None:
+    payload = {
+        "search_url": "https://example.test/search",
+        "total_matching": 281,
+        "returned": 1,
+        "location": "Collin County, TX",
+        "facets": [
+            {
+                "section": "City",
+                "options": [
+                    {
+                        "label": "Anna",
+                        "count": 44,
+                        "id": 698,
+                        "relative_url_path": "/texas-land-for-sale/anna/acres-5-20",
+                    }
+                ],
+            }
+        ],
+        "listings": [{"property_id": 1, "title": "Parcel 1"}],
+    }
+    monkeypatch.setattr(landwatch_tools, "run_search", lambda **_: json.dumps(payload))
+
+    tool = build_crewai_tool()
+    restored = json.loads(tool._run(state="texas"))
+
+    assert restored["facets"][0]["section"] == "City"
+    assert restored["facets"][0]["options"][0]["label"] == "Anna"

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useSession } from './lib/useSession'
 import { useTraceStream } from './lib/useTraceStream'
 import { usePanelLayout } from './lib/usePanelLayout'
@@ -30,6 +30,7 @@ export default function App() {
   const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<WorkspaceTab>('observability')
   const [selectedParcel, setSelectedParcel] = useState<Parcel | null>(null)
   const [mobilePane, setMobilePane] = useState<'chat' | 'workspace'>('chat')
+  const historyHydratedRef = useRef<string | null>(null)
 
   const latestAssistant = [...session.messages].reverse().find((m) => m.role === 'assistant' && m.payload?.shortlist)
   const parcels = latestAssistant?.payload?.shortlist ?? []
@@ -39,6 +40,17 @@ export default function App() {
   useEffect(() => {
     setSelectedParcel(null)
   }, [resultsIdentity])
+
+  // Restore this session's observability history once, on first load (e.g.
+  // returning user, page reload). Explicit session switches/new searches
+  // handle their own hydrate/reset below instead of re-firing this effect,
+  // so a session's reasoning trace is never silently wiped mid-conversation.
+  useEffect(() => {
+    if (session.sessionId && historyHydratedRef.current !== session.sessionId) {
+      historyHydratedRef.current = session.sessionId
+      void trace.loadSessionHistory(session.sessionId)
+    }
+  }, [session.sessionId, trace])
 
   useEffect(() => {
     if (inspectorOpen) {
@@ -223,6 +235,7 @@ export default function App() {
               activeTab={activeWorkspaceTab}
               onTabChange={setActiveWorkspaceTab}
               events={trace.panels.trace}
+              history={trace.history}
               parcels={parcels}
               totalMatching={totalMatching}
               isRunActive={chatRunActive || sampleRunning}

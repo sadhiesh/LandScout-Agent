@@ -27,6 +27,8 @@ from pathlib import Path
 from typing import Any, Callable, Optional
 
 from agents.common.json_utils import extract_json
+from landwatch.filters import FILTER_CATALOG, FilterKind
+from landwatch.vocab import slugify
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +60,20 @@ SIGNAL_FIELDS: dict[str, tuple[str, ...]] = {
 # the user stating it. Searching the wrong state silently wastes the whole run.
 LOCATION_FIELDS = ("state", "county", "city", "region")
 
+# The narrowing dimensions an investor reaches for first — acreage, price,
+# location, and residence. These always render in the facet-narrowing UI in
+# full; everything else (property type, activities, land use, ...) is a
+# secondary/long-tail facet that only shows up when it earns its place, via
+# `_trim_secondary_options` below. Keep this in sync with `preferred_order`
+# in `_build_refinement_options`.
+PRIMARY_FACET_SECTIONS = {"City", "County", "Region", "Price", "Parcel Size", "Residence"}
+
+# Above this many total options, a flat list stops being scannable, so
+# secondary-tier facets get curated down to the LLM's picks (see
+# `_trim_secondary_options`). Below it, nothing is hidden — there is nothing
+# to declutter.
+WIDE_RESULT_THRESHOLD = 8
+
 # What to offer dropping first when a search returns nothing, narrowest first.
 # `keyword` leads because LandWatch matches it as literal free text, so a
 # parcel with a creek is missed whenever the listing words it differently.
@@ -73,6 +89,68 @@ RELAX_PRIORITY = (
     "price_max",
     "price_min",
 )
+
+# Purpose/intent words that have no place as a literal LandWatch listing-text
+# filter. LandWatch's keyword field does a full-text search over listing titles
+# and descriptions, so "investment" rarely appears verbatim in a listing and
+# silently kills result counts. These words describe *why* the buyer wants the
+# land, not *what* the land is like. The list is conservative: only terms where
+# the buyer's motive is the sole reasonable reading (not genuine land features).
+GENERIC_KEYWORD_TERMS: frozenset[str] = frozenset({
+    "investment",
+    "investing",
+    "resale",
+    "resell",
+    "reselling",
+    "flip",
+    "flipping",
+    "profit",
+    "personal use",
+    "quick sale",
+    "cash buyer",
+    "cash offer",
+})
+
+
+def strip_generic_keyword_terms(keyword: str | None) -> str | None:
+    """Remove generic purpose/intent words from a keyword string.
+
+    Applies an exact whole-word/phrase match (case-insensitive) against
+    GENERIC_KEYWORD_TERMS so that a buyer saying "its for investment" does not
+    pollute the Scout search keyword with "investment".
+
+    Multi-word denylist phrases (e.g. "personal use") are checked as substrings
+    of the full keyword string after single-word terms are stripped token by
+    token. Genuine feature words that happen to contain a denylist token are
+    left alone because matching is whole-word or whole-phrase only.
+
+    Returns None when nothing useful remains.
+    """
+    if not keyword:
+        return None
+
+    # Separate single-word entries from multi-word phrases for efficient matching.
+    single_terms = {t for t in GENERIC_KEYWORD_TERMS if " " not in t}
+    phrase_terms = {t for t in GENERIC_KEYWORD_TERMS if " " in t}
+
+    # Token-level removal for single-word entries (whole-word match only).
+    tokens = keyword.split()
+    tokens = [t for t in tokens if t.lower() not in single_terms]
+    result = " ".join(tokens)
+
+    # Phrase-level removal — case-insensitive substring of the joined result.
+    for phrase in phrase_terms:
+        result = re.sub(
+            r"(?i)\b" + re.escape(phrase) + r"\b",
+            "",
+            result,
+        )
+
+    # Collapse excess whitespace left by removed phrases.
+    result = " ".join(result.split())
+
+    return result if result else None
+
 
 # Field names as they should read in a sentence to the user.
 FIELD_LABELS = {
@@ -127,6 +205,7 @@ class GateResult:
     # Stage 2 inventory analysis shown beside un-enriched Scout candidates.
     common_conditions: list[str] = field(default_factory=list)
     recommendations: list[str] = field(default_factory=list)
+    refinement_options: list[dict[str, Any]] = field(default_factory=list)
 
 
 def is_affirmative(message: str) -> bool:
@@ -222,7 +301,25 @@ def merge_criteria(
 
     for key, value in new.items():
         if value is not None:
-            merged[key] = value
+            # Special case: accumulate keywords instead of replacing
+            if key == "keyword" and merged.get("keyword"):
+                existing = merged["keyword"]
+                # Deduplicate while preserving order
+                all_keywords = [existing, value]
+                seen = set()
+                unique_keywords = []
+                for kw in all_keywords:
+                    kw_lower = kw.lower().strip()
+                    if kw_lower and kw_lower not in seen:
+                        seen.add(kw_lower)
+                        unique_keywords.append(kw)
+                # Strip generic terms from the accumulated result so a bad word
+                # from a prior turn cannot survive across subsequent merges.
+                merged[key] = strip_generic_keyword_terms(
+                    " ".join(unique_keywords)
+                )
+            else:
+                merged[key] = value
         elif key not in merged:
             merged[key] = None
     return merged
@@ -618,6 +715,7 @@ def assess_breadth(
     parcels: list[dict[str, Any]],
     candidate_limit: int,
     total_matching: int | None = None,
+    facets: list[dict[str, Any]] | None = None,
     provenance: dict[str, str] | None = None,
     round_num: int = 0,
     emitter: Any = None,
@@ -632,30 +730,29 @@ def assess_breadth(
     import json
 
     returned_count = len(parcels)
+    effective_total = total_matching if total_matching is not None else returned_count
 
-    if returned_count <= candidate_limit:
+    if effective_total <= candidate_limit:
         _emit(
             emitter,
-            f"{returned_count} returned candidates fit the enrichment limit",
+            f"{effective_total} matches fit the enrichment limit",
             {
                 "stage": 2,
                 "returned_count": returned_count,
+                "total_matching": total_matching,
                 "candidate_limit": candidate_limit,
                 "asked": False,
             },
         )
         return GateResult(sufficient=True)
 
-    common_conditions = _fallback_common_conditions(parcels)
-    recommendations = [
-        f"Select up to {candidate_limit} parcels from these candidates.",
-        "Or narrow the search by location, budget, acreage, or property type.",
-    ]
-    total_str = f"{total_matching:,}" if total_matching else "many"
+    refinement_options = _build_refinement_options(criteria, facets or [], effective_total)
+    common_conditions = _fallback_common_conditions(refinement_options, effective_total)
+    recommendations = _fallback_recommendations(refinement_options)
+    total_str = f"{effective_total:,}" if effective_total else "many"
     fallback_question = (
-        f"I found {total_str} properties matching your criteria, showing {returned_count} "
-        f"as candidates. For effective enrichment, please either select up to {candidate_limit} "
-        "parcels to analyze in depth, or narrow your criteria (price, acreage, location, or property type)."
+        f"LandWatch shows {total_str} matching properties. Add one more filter below, "
+        "or tell me a tighter location, budget, acreage, or property type so I can narrow the search."
     )
 
     try:
@@ -665,30 +762,27 @@ def assess_breadth(
             .replace("{candidate_limit}", str(candidate_limit))
             .replace(
                 "{total_matching}",
-                f"{total_matching:,}" if total_matching is not None else "unknown",
+                f"{effective_total:,}" if effective_total is not None else "unknown",
             )
             .replace("{criteria_json}", json.dumps(criteria, indent=2, default=str))
             .replace(
-                "{candidate_json}",
-                json.dumps(
-                    [_candidate_summary(parcel) for parcel in parcels],
-                    indent=2,
-                    default=str,
-                ),
+                "{refinement_options_json}",
+                json.dumps(refinement_options, indent=2, default=str),
             )
         )
         parsed = extract_json((llm_fn or _default_llm)(prompt))
         if not isinstance(parsed, dict):
-            raise ValueError("Inventory analysis did not return a JSON object")
+            raise ValueError("Refinement analysis did not return a JSON object")
     except Exception as e:
         logger.warning(f"Stage 2 inventory analysis failed; using fallback: {e}")
         _emit(
             emitter,
-            "Inventory analysis failed; keeping the enrichment guard closed",
+            "Facet analysis failed; keeping the narrowing guard closed",
             {
                 "stage": 2,
                 "error": str(e),
                 "returned_count": returned_count,
+                "total_matching": effective_total,
                 "candidate_limit": candidate_limit,
                 "failed_safe": True,
             },
@@ -698,34 +792,34 @@ def assess_breadth(
             question=fallback_question,
             common_conditions=common_conditions,
             recommendations=recommendations,
+            refinement_options=refinement_options,
         )
 
     question = parsed.get("question") or fallback_question
     parsed_conditions = parsed.get("common_conditions")
-    parsed_recommendations = parsed.get("recommendations")
+    selected_ids = parsed.get("recommended_option_ids")
     if isinstance(parsed_conditions, list):
         common_conditions = [
             str(item) for item in parsed_conditions if str(item).strip()
         ] or common_conditions
-    if isinstance(parsed_recommendations, list):
-        recommendations = [
-            str(item) for item in parsed_recommendations if str(item).strip()
-        ] or recommendations
+    recommendations = _select_recommendations(refinement_options, selected_ids) or recommendations
+    refinement_options = _trim_secondary_options(refinement_options, selected_ids)
 
     _emit(
         emitter,
         parsed.get(
             "reasoning",
-            f"{returned_count} candidates exceed the {candidate_limit}-parcel limit",
+            f"{effective_total} matches exceed the {candidate_limit}-parcel limit",
         ),
         {
             "stage": 2,
             "round": round_num,
             "returned_count": returned_count,
             "candidate_limit": candidate_limit,
-            "total_matching": total_matching,
+            "total_matching": effective_total,
             "common_conditions": common_conditions,
             "recommendations": recommendations,
+            "refinement_options": refinement_options,
         },
     )
 
@@ -734,56 +828,368 @@ def assess_breadth(
         question=question,
         common_conditions=common_conditions,
         recommendations=recommendations,
+        refinement_options=refinement_options,
     )
 
 
-def _candidate_summary(parcel: dict[str, Any]) -> dict[str, Any]:
-    """Return the compact, factual subset the Stage 2 LLM may reason over."""
-    location = parcel.get("location") or {}
-    info = parcel.get("basic_info") or {}
+def _fallback_common_conditions(
+    refinement_options: list[dict[str, Any]], total_matching: int
+) -> list[str]:
+    """Build useful narrowing observations without an LLM."""
+    conditions: list[str] = []
+    sections = Counter(option["section"] for option in refinement_options if option.get("section"))
+    if sections:
+        section, count = sections.most_common(1)[0]
+        conditions.append(f"LandWatch returned {count} narrowing options in {section.lower()}.")
+
+    cheaper = [option["count"] for option in refinement_options if option.get("section") == "Price"]
+    if cheaper:
+        conditions.append(
+            f"Price filters can reduce the search from {total_matching:,} matches to as few as {min(cheaper):,}."
+        )
+    locations = [option["count"] for option in refinement_options if option.get("section") in {"City", "County", "Region"}]
+    if locations:
+        conditions.append(
+            f"Location filters can cut the result set down to between {min(locations):,} and {max(locations):,} matches."
+        )
+    return conditions or [f"LandWatch shows {total_matching:,} matching properties, so one more filter is needed."]
+
+
+def _fallback_recommendations(refinement_options: list[dict[str, Any]]) -> list[str]:
+    picks = refinement_options[:3]
+    if not picks:
+        return [
+            "Add a tighter location, budget, acreage, or property type.",
+        ]
+    return [
+        f"{option['section']}: {option['label']} ({option['count']:,} matches)"
+        for option in picks
+    ]
+
+
+def _select_recommendations(
+    refinement_options: list[dict[str, Any]],
+    selected_ids: Any,
+) -> list[str]:
+    if not isinstance(selected_ids, list):
+        return []
+    by_id = {option["id"]: option for option in refinement_options}
+    chosen: list[str] = []
+    for raw_id in selected_ids:
+        option = by_id.get(str(raw_id))
+        if not option:
+            continue
+        chosen.append(
+            f"{option['section']}: {option['label']} ({option['count']:,} matches)"
+        )
+    return chosen
+
+
+def _strip_suffix(value: str, suffix: str) -> str:
+    return value[: -len(suffix)] if value.endswith(suffix) else value
+
+
+def _enum_value_from_option(spec_name: str, option: dict[str, Any]) -> str | None:
+    spec = FILTER_CATALOG.get(spec_name)
+    if not spec:
+        return None
+    option_id = option.get("id")
+    label = slugify(str(option.get("label") or ""))
+    for value in spec.values:
+        if option_id not in (None, 0) and value.id == option_id:
+            return value.value
+        if slugify(value.label) == label or slugify(value.value) == label:
+            return value.value
+    return None
+
+
+def _parse_range_value(value: str) -> tuple[float | None, float | None]:
+    if value.startswith("under-"):
+        return None, float(value.removeprefix("under-"))
+    if value.startswith("over-"):
+        return float(value.removeprefix("over-")), None
+    low, _, high = value.partition("-")
+    return float(low), float(high) if high else None
+
+
+def _is_subset_range(
+    current_min: float | int | None,
+    current_max: float | int | None,
+    new_min: float | int | None,
+    new_max: float | int | None,
+) -> bool:
+    """Return True only when [new_min, new_max] is a proper subset of [current_min, current_max].
+
+    A facet option that *removes* an existing bound always widens the search, so
+    those cases are rejected immediately.  Boundary-touching ranges are also
+    rejected: a new ceiling equal to an existing floor (or vice versa) yields an
+    empty or degenerate intersection — not a meaningful narrowing.
+
+    The logic covers six cases:
+    1. No existing constraint   → any range is valid (nothing to narrow).
+    2. new_min is None but current_min is set → floor would be dropped → widens.
+    3. new_max is None but current_max is set → ceiling would be dropped → widens.
+    4. new_min < current_min                  → floor would be lowered → widens.
+    5. new_max > current_max                  → ceiling would be raised → widens.
+    6. new_max <= current_min                 → ranges are disjoint or touch only at the boundary → empty.
+    7. new_min >= current_max                 → same, opposite direction.
+    """
+    if current_min is None and current_max is None:
+        return True
+
+    # A proposed range that removes an existing bound always widens the search.
+    if new_min is None and current_min is not None:
+        return False
+    if new_max is None and current_max is not None:
+        return False
+
+    if new_min is not None and current_min is not None and new_min < current_min:
+        return False
+    if new_max is not None and current_max is not None and new_max > current_max:
+        return False
+
+    # Proposed ceiling must be strictly above existing floor (else disjoint or degenerate).
+    if current_min is not None and new_max is not None and new_max <= current_min:
+        return False
+    # Proposed floor must be strictly below existing ceiling (else disjoint or degenerate).
+    if current_max is not None and new_min is not None and new_min >= current_max:
+        return False
+
+    return True
+
+
+def _make_refinement_option(
+    option_id: str,
+    section: str,
+    label: str,
+    count: int,
+    criteria_patch: dict[str, Any],
+    clear_fields: list[str] | None = None,
+) -> dict[str, Any]:
     return {
-        "property_id": parcel.get("property_id"),
-        "city": location.get("city"),
-        "county": location.get("county"),
-        "state": location.get("state"),
-        "price": info.get("price"),
-        "acres": info.get("acres"),
-        "price_per_acre": info.get("price_per_acre"),
-        "property_types": info.get("property_types") or [],
+        "id": option_id,
+        "section": section,
+        "label": label,
+        "count": count,
+        "criteria_patch": criteria_patch,
+        "clear_fields": clear_fields or [],
+        "tier": "primary" if section in PRIMARY_FACET_SECTIONS else "secondary",
     }
 
 
-def _fallback_common_conditions(parcels: list[dict[str, Any]]) -> list[str]:
-    """Build useful inventory observations without an LLM."""
-    summaries = [_candidate_summary(parcel) for parcel in parcels]
-    conditions: list[str] = []
+def _trim_secondary_options(
+    options: list[dict[str, Any]],
+    selected_ids: Any,
+) -> list[dict[str, Any]]:
+    """Reduce clutter once the option set is wide, without ever hiding a
+    primary facet (acreage, price, location, residence).
 
-    cities = Counter(item["city"] for item in summaries if item.get("city"))
-    if cities:
-        city, count = cities.most_common(1)[0]
-        conditions.append(f"{count} of {len(parcels)} parcels are in {city}.")
+    Below `WIDE_RESULT_THRESHOLD` there is nothing to declutter, so every
+    option is kept as-is. Above it, secondary/long-tail options (property
+    type, activities, land use, geography, housing type, HOA) are trimmed to
+    whichever the Stage 2 LLM call flagged as `recommended_option_ids` — the
+    same IDs already used for the narrative `recommendations` text, so the
+    dropdown and the prose never disagree about what is worth showing.
+    """
+    if len(options) <= WIDE_RESULT_THRESHOLD:
+        return options
 
-    prices = [
-        item["price"]
-        for item in summaries
-        if isinstance(item.get("price"), (int, float))
+    primary = [o for o in options if o.get("tier") == "primary"]
+    secondary = [o for o in options if o.get("tier") != "primary"]
+
+    if isinstance(selected_ids, list) and selected_ids:
+        wanted = {str(raw_id) for raw_id in selected_ids}
+        picked = [o for o in secondary if o["id"] in wanted]
+        if picked:
+            secondary = picked
+
+    return primary + secondary
+
+
+def _build_refinement_options(
+    criteria: dict[str, Any],
+    facets: list[dict[str, Any]],
+    total_matching: int,
+) -> list[dict[str, Any]]:
+    """Translate raw LandWatch facets into safe criteria patches."""
+    options_by_section: dict[str, list[dict[str, Any]]] = {}
+
+    for facet in facets:
+        section = str(facet.get("section") or "").strip()
+        if not section:
+            continue
+        built: list[dict[str, Any]] = []
+        for raw_option in facet.get("options") or []:
+            label = str(raw_option.get("label") or "").strip()
+            count = raw_option.get("count")
+            if not label or not isinstance(count, int) or count <= 0 or count >= total_matching:
+                continue
+
+            option_id = raw_option.get("id")
+            slug = slugify(label)
+            field_option_id = f"{slugify(section)}:{option_id if option_id not in (None, 0) else slug}"
+
+            if section == "City" and criteria.get("city") != slug:
+                built.append(
+                    _make_refinement_option(
+                        field_option_id,
+                        section,
+                        label,
+                        count,
+                        {"city": slug},
+                    )
+                )
+            elif section == "County":
+                county_slug = _strip_suffix(slug, "-county")
+                if criteria.get("county") != county_slug:
+                    built.append(
+                        _make_refinement_option(
+                            field_option_id,
+                            section,
+                            label,
+                            count,
+                            {"county": county_slug},
+                        )
+                    )
+            elif section == "Region":
+                region_slug = _strip_suffix(slug, "-region")
+                if criteria.get("region") != region_slug:
+                    built.append(
+                        _make_refinement_option(
+                            field_option_id,
+                            section,
+                            label,
+                            count,
+                            {"region": region_slug},
+                        )
+                    )
+            elif section == "Residence" and criteria.get("has_residence") is None:
+                if label in {"Yes", "No"}:
+                    built.append(
+                        _make_refinement_option(
+                            field_option_id,
+                            section,
+                            label,
+                            count,
+                            {"has_residence": label == "Yes"},
+                        )
+                    )
+            elif section == "Price":
+                for preset in FILTER_CATALOG["price"].presets:
+                    if preset.label != label:
+                        continue
+                    field_option_id = f"price:{preset.value}"
+                    price_min, price_max = _parse_range_value(preset.value)
+                    if not _is_subset_range(
+                        criteria.get("price_min"),
+                        criteria.get("price_max"),
+                        price_min,
+                        price_max,
+                    ):
+                        continue
+                    built.append(
+                        _make_refinement_option(
+                            field_option_id,
+                            section,
+                            label,
+                            count,
+                            {"price_min": int(price_min) if price_min is not None else None, "price_max": int(price_max) if price_max is not None else None},
+                            ["price_min", "price_max"],
+                        )
+                    )
+                    break
+            elif section == "Parcel Size":
+                for preset in FILTER_CATALOG["acres"].presets:
+                    if preset.label != label:
+                        continue
+                    field_option_id = f"parcel-size:{preset.value}"
+                    acres_min, acres_max = _parse_range_value(preset.value)
+                    if not _is_subset_range(
+                        criteria.get("acres_min"),
+                        criteria.get("acres_max"),
+                        acres_min,
+                        acres_max,
+                    ):
+                        continue
+                    built.append(
+                        _make_refinement_option(
+                            field_option_id,
+                            section,
+                            label,
+                            count,
+                            {"acres_min": acres_min, "acres_max": acres_max},
+                            ["acres_min", "acres_max"],
+                        )
+                    )
+                    break
+            else:
+                section_map = {
+                    "Property Types": "property_types",
+                    "Activities": "activities",
+                    "Geography": "geographies",
+                    "Land Uses": "land_uses",
+                    "Housing Type": "housing_types",
+                    "HOA": "hoa",
+                }
+                spec_name = section_map.get(section)
+                if not spec_name:
+                    continue
+                value = _enum_value_from_option(spec_name, raw_option)
+                if value is None:
+                    continue
+                current_value = criteria.get(spec_name)
+                if spec_name == "hoa":
+                    if current_value == value:
+                        continue
+                    patch = {spec_name: value}
+                else:
+                    if spec_name != "property_types" and current_value not in (None, [], ""):
+                        continue
+                    if current_value == [value]:
+                        continue
+                    patch = {spec_name: [value]}
+                built.append(
+                    _make_refinement_option(
+                        field_option_id,
+                        section,
+                        label,
+                        count,
+                        patch,
+                    )
+                )
+
+        built.sort(key=lambda item: (item["count"], item["label"]))
+        if built:
+            # Primary facets (acreage, price, location, residence) are the
+            # main way to narrow a search, so their range/bucket options —
+            # e.g. every LandWatch price band — all get surfaced together
+            # instead of being flattened down to two. Secondary facets stay
+            # tightly capped; `_trim_secondary_options` decides which of
+            # those survive once the overall set is wide.
+            cap = 6 if section in PRIMARY_FACET_SECTIONS else 2
+            options_by_section[section] = built[:cap]
+
+    preferred_order = [
+        "City",
+        "County",
+        "Region",
+        "Price",
+        "Parcel Size",
+        "Property Types",
+        "Residence",
+        "Activities",
+        "Geography",
+        "Land Uses",
+        "Housing Type",
+        "HOA",
     ]
-    if prices:
-        conditions.append(
-            f"List prices range from ${min(prices):,.0f} to ${max(prices):,.0f}."
-        )
-
-    acres = [
-        item["acres"]
-        for item in summaries
-        if isinstance(item.get("acres"), (int, float))
-    ]
-    if acres:
-        conditions.append(
-            f"Parcel sizes range from {min(acres):g} to {max(acres):g} acres."
-        )
-
-    return conditions or [f"Scout returned {len(parcels)} selectable parcels."]
+    combined: list[dict[str, Any]] = []
+    for section in preferred_order:
+        combined.extend(options_by_section.get(section, []))
+    for section, values in options_by_section.items():
+        if section not in preferred_order:
+            combined.extend(values)
+    return combined[:18]
 
 
 def _apply_search_defaults(

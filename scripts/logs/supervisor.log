@@ -1,6 +1,0 @@
-2026-09-04 23:01:53,452 [INFO] __main__: Starting Supervisor agent...
-2026-09-04 23:01:53,453 [INFO] __main__: Starting Supervisor A2A server on port 8001
-INFO:     Started server process [89538]
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
-INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)

@@ -1,6 +1,6 @@
 # Scout Agent
 
-Port 8002. Turns investment criteria into structured searches and returns raw parcel candidates.
+Port 8002. Turns investment criteria into structured searches and returns raw parcel candidates plus contextual facet counts.
 
 **Owns:** `landwatch_search`.
 
@@ -9,7 +9,9 @@ Port 8002. Turns investment criteria into structured searches and returns raw pa
 ## Contract
 
 - Receives from Supervisor: `{subtask, criteria}`.
-- Returns to Supervisor: raw parcel candidates + the search URL actually used, so a human can reproduce the query.
+- Returns to Supervisor: raw parcel candidates, compact facet sections, and the
+  search URL actually used, so a human can reproduce the query and the
+  Supervisor can narrow broad searches without paging through more listings.
 - When `landwatch_search` succeeds, return that tool JSON directly as the final
   Scout answer. Do not spend a second LLM turn reserializing large listing
   payloads into prose or fenced JSON.

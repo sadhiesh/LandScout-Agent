@@ -181,6 +181,22 @@ class Listing(BaseModel):
     last_updated: dt.datetime | None = None
 
 
+class FacetOption(BaseModel):
+    """One narrowing option LandWatch advertises for the current search."""
+
+    label: str
+    count: int = 0
+    relative_url_path: str | None = None
+    facet_id: int | None = None
+
+
+class FacetSection(BaseModel):
+    """One facet section from the search payload, e.g. City or Price."""
+
+    section: str
+    options: list[FacetOption] = Field(default_factory=list)
+
+
 class SearchResult(BaseModel):
     """A page of search results plus the context needed to page through them."""
 
@@ -194,6 +210,7 @@ class SearchResult(BaseModel):
     total_pages: int
 
     listings: list[Listing] = Field(default_factory=list)
+    facets: list[FacetSection] = Field(default_factory=list)
 
     location_name: str | None = None
     next_page_path: str | None = None

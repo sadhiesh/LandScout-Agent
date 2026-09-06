@@ -1,0 +1,2 @@
+ALTER TABLE searches
+ADD COLUMN IF NOT EXISTS facets JSONB NOT NULL DEFAULT '[]'::jsonb;

@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import MessageBubble from './MessageBubble'
 import NarrationBubble from './NarrationBubble'
 import ShortlistCard from '../results/ShortlistCard'
+import CandidatePicker from './CandidatePicker'
+import RefinementPicker, { type RefinementOption } from './RefinementPicker'
+import ConfirmationActions from './ConfirmationActions'
 import ModelPicker from '../lib/ModelPicker'
 import { greeting, milestoneLead, memoryCallbackLead, errorLead } from './personalize'
 import type { Message } from '../lib/useSession'
@@ -79,7 +82,12 @@ export default function ChatWindow({
     setLlmModel(model)
   }
 
-  const send = async (raw: string) => {
+  const send = async (
+    raw: string,
+    selectedParcelIds?: string[],
+    selectedRefinementId?: string,
+    selectedRefinementIds?: string[],
+  ) => {
     const userMessage = raw.trim()
     if (!userMessage || isLoading) return
     setInput('')
@@ -140,17 +148,29 @@ export default function ChatWindow({
     setCurrentRunId(runId)
 
     try {
+      const body: any = {
+        session_id: activeSessionId,
+        message: userMessage,
+        user_id: userId,
+        skip_cache: skipCache,
+        llm_provider: llmProvider,
+        llm_model: llmModel,
+      }
+      
+      // Include structured selections if provided.
+      if (selectedParcelIds && selectedParcelIds.length > 0) {
+        body.selected_parcel_ids = selectedParcelIds
+      }
+      if (selectedRefinementIds && selectedRefinementIds.length > 0) {
+        body.selected_refinement_ids = selectedRefinementIds
+      } else if (selectedRefinementId) {
+        body.selected_refinement_id = selectedRefinementId
+      }
+
       const response = await fetch('/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Run-ID': runId },
-        body: JSON.stringify({
-          session_id: activeSessionId,
-          message: userMessage,
-          user_id: userId,
-          skip_cache: skipCache,
-          llm_provider: llmProvider,
-          llm_model: llmModel,
-        }),
+        body: JSON.stringify(body),
       })
       if (!response.ok) throw new Error(response.statusText)
 
@@ -208,50 +228,107 @@ export default function ChatWindow({
           </div>
         )}
 
-        {messages.map((msg) => {
-          const isJourneyStep = msg.payload?.journey_step === true
-          const parcels = msg.payload?.shortlist || []
-          const totalMatching = msg.payload?.total_matching || 0
-          const hasResults = msg.role === 'assistant' && parcels.length > 0
-          const lead = hasResults
-            ? msg.payload?.cached
-              ? memoryCallbackLead(displayName)
-              : milestoneLead(displayName, parcels.length)
-            : null
+        {messages
+          .filter((msg) => !msg.payload?.journey_step) // Collapse journey steps from display
+          .map((msg) => {
+            const parcels = msg.payload?.shortlist || []
+            const candidates = msg.payload?.candidates || []
+            const refinementOptions =
+              msg.payload?.refinement_options ||
+              msg.payload?.clarification?.refinement_options ||
+              []
+            const narrowingAnalysis = msg.payload?.narrowing_analysis
+            const candidateLimit = msg.payload?.candidate_limit || 10
+            const totalMatching = msg.payload?.total_matching || 0
+            const hasResults = msg.role === 'assistant' && parcels.length > 0
+            const hasCandidates = msg.role === 'assistant' && candidates.length > 0
+            const hasRefinementOptions =
+              msg.role === 'assistant' &&
+              msg.payload?.clarification?.kind === 'facet_narrowing' &&
+              refinementOptions.length > 0
+            const awaitingConfirmation =
+              msg.payload?.awaiting_clarification &&
+              msg.payload?.clarification?.kind === 'criteria_confirmation'
+            const lead = hasResults
+              ? msg.payload?.cached
+                ? memoryCallbackLead(displayName)
+                : milestoneLead(displayName, parcels.length)
+              : null
 
-          return (
-            <div key={msg.message_id}>
-              {isJourneyStep ? (
-                <div className={styles.journeyStep}>
-                  <span className={styles.journeyStepIcon}>▸</span>
-                  <span className={styles.journeyStepText}>{msg.content}</span>
-                </div>
-              ) : (
+            return (
+              <div key={msg.message_id}>
                 <MessageBubble role={msg.role} content={msg.content} lead={lead} />
-              )}
 
-              {hasResults && (
-                <div className={styles.inlineResults}>
-                  <div className={styles.inlineParcels}>
-                    {parcels.slice(0, 3).map((parcel: Parcel, idx: number) => (
-                      <ShortlistCard
-                        key={parcel.property_id || idx}
-                        parcel={parcel}
-                        rank={idx + 1}
-                        variant="inline"
-                        topPick={idx === 0}
-                        onSelect={() => onSelectParcel(parcel)}
-                      />
-                    ))}
-                  </div>
-                  <button type="button" className={styles.viewAllBtn} onClick={onViewAllParcels}>
-                      View all {parcels.length} results{totalMatching ? ` of ${totalMatching} matches` : ''} <span aria-hidden>›</span>
+                {/* Criteria confirmation actions */}
+                {awaitingConfirmation && (
+                  <ConfirmationActions
+                    onConfirm={async () => {
+                      await send('yes')
+                    }}
+                    onEdit={() => {
+                      setInput('Actually, ')
+                      textareaRef.current?.focus()
+                    }}
+                    isLoading={isLoading}
+                  />
+                )}
+
+                {hasRefinementOptions && (
+                  <RefinementPicker
+                    options={refinementOptions as RefinementOption[]}
+                    totalMatching={totalMatching}
+                    analysis={narrowingAnalysis}
+                    onApply={async (selectedOptions) => {
+                      const summary = selectedOptions
+                        .map((option) => `${option.section}: ${option.label}`)
+                        .join('; ')
+                      await send(
+                        `Apply ${summary}`,
+                        undefined,
+                        selectedOptions.length === 1 ? selectedOptions[0].id : undefined,
+                        selectedOptions.length > 1 ? selectedOptions.map((option) => option.id) : undefined,
+                      )
+                    }}
+                    isLoading={isLoading}
+                  />
+                )}
+
+                {/* Candidate selection picker */}
+                {hasCandidates && msg.payload?.clarification?.kind === 'candidate_selection' && (
+                  <CandidatePicker
+                    candidates={candidates}
+                    limit={candidateLimit}
+                    onAnalyze={async (selectedIds) => {
+                      await send('Analyze these parcels', selectedIds)
+                    }}
+                    isLoading={isLoading}
+                  />
+                )}
+
+                {/* Inline shortlist preview */}
+                {hasResults && (
+                  <div className={styles.inlineResults}>
+                    <div className={styles.inlineParcels}>
+                      {parcels.slice(0, 3).map((parcel: Parcel, idx: number) => (
+                        <ShortlistCard
+                          key={parcel.property_id || idx}
+                          parcel={parcel}
+                          rank={idx + 1}
+                          variant="inline"
+                          topPick={idx === 0}
+                          onSelect={() => onSelectParcel(parcel)}
+                        />
+                      ))}
+                    </div>
+                    <button type="button" className={styles.viewAllBtn} onClick={onViewAllParcels}>
+                      View all {parcels.length} results
+                      {totalMatching ? ` of ${totalMatching} matches` : ''} <span aria-hidden>›</span>
                     </button>
-                </div>
-              )}
-            </div>
-          )
-        })}
+                  </div>
+                )}
+              </div>
+            )
+          })}
 
         {isLoading && currentRunId && <NarrationBubble events={traceEvents} isComplete={false} />}
         <div ref={endRef} />
@@ -273,7 +350,7 @@ export default function ChatWindow({
             <ModelPicker onSelectionChange={handleModelSelection} />
           </div>
         )}
-        {userId && messages.length < 3 && (
+        {userId && messages.filter((m) => m.role === 'user').length < 3 && (
           <div className={styles.suggestions}>
             {SUGGESTIONS.map((s) => (
               <button key={s} type="button" className={styles.chip} onClick={() => void send(s)}>

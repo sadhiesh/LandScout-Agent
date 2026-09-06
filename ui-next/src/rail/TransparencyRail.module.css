@@ -95,14 +95,81 @@
   line-height: 1.55;
 }
 
-.stages {
+.scroll {
   flex: 1;
   overflow-y: auto;
   min-height: 0;
   padding: 12px 14px;
   display: flex;
   flex-direction: column;
+  gap: 10px;
+}
+
+.stages {
+  display: flex;
+  flex-direction: column;
   gap: 6px;
+}
+
+.historySection {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-control);
+  background: var(--surface-raised);
+  overflow: hidden;
+}
+
+.historySummary {
+  padding: 10px 11px;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--text-secondary);
+  cursor: pointer;
+  list-style: none;
+}
+
+.historySummary::-webkit-details-marker {
+  display: none;
+}
+
+.historyList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 10px 10px;
+}
+
+.historyTurn {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.historyTurnSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  list-style: none;
+}
+
+.historyTurnSummary::-webkit-details-marker {
+  display: none;
+}
+
+.historyTurnMeta {
+  font-weight: 500;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.historyTurn .stages {
+  padding: 0 10px 10px;
 }
 
 .stage {

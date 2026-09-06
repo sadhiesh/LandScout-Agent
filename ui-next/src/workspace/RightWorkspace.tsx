@@ -1,4 +1,4 @@
-import type { TraceEvent } from '../lib/useTraceStream'
+import type { TraceEvent, TurnRecord } from '../lib/useTraceStream'
 import ParcelDetail from '../results/ParcelDetail'
 import ResultsPanel from '../results/ResultsPanel'
 import type { Parcel } from '../results/ShortlistCard'
@@ -11,6 +11,7 @@ interface RightWorkspaceProps {
   activeTab: WorkspaceTab
   onTabChange: (tab: WorkspaceTab) => void
   events: TraceEvent[]
+  history: TurnRecord[]
   parcels: Parcel[]
   totalMatching: number
   isRunActive: boolean
@@ -24,6 +25,7 @@ export default function RightWorkspace({
   activeTab,
   onTabChange,
   events,
+  history,
   parcels,
   totalMatching,
   isRunActive,
@@ -80,7 +82,7 @@ export default function RightWorkspace({
         hidden={activeTab !== 'observability'}
         className={styles.panel}
       >
-        <TransparencyRail events={events} isRunActive={isRunActive} onOpenInspector={onOpenInspector} />
+        <TransparencyRail events={events} history={history} isRunActive={isRunActive} onOpenInspector={onOpenInspector} />
       </div>
       <div
         id="parcels-panel"

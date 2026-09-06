@@ -60,6 +60,8 @@ Agent(
 - Run the criteria sufficiency gate (2 stages) to ensure searchable input
 - Confirm the complete merged criteria before every initial or amended search
 - After confirmation, fingerprint criteria and check session memory for unchanged searches
+- When LandWatch returns more than 10 total matches, convert Scout facets into
+  validated refinement options and loop on narrowing before enrichment
 - Route tasks to Scout → Enricher → Scorer in sequence
 - Verify shortlist meets stated criteria before returning
 - Degrade gracefully on worker failures (return partial results with explanation)
@@ -100,7 +102,7 @@ Agent(
 ### Key Responsibilities
 
 - Translate investment criteria into structured `landwatch_search` calls
-- Return raw parcel candidates plus the search URL used
+- Return raw parcel candidates, facet sections, and the search URL used
 - Prefer one well-formed search over multiple speculative queries
 - Handle tool errors (e.g., invalid filter values) and retry once with corrections
 - Return zero results as a valid outcome (don't invent constraints to broaden the search)
@@ -110,7 +112,7 @@ Agent(
 - `landwatch_search` (via `tools/landwatch/landwatch/tools.py::build_crewai_tool()`)
   - Vocabulary comes from the LandWatch catalog (regenerated, never hardcoded)
   - Rate limit: 1 request/second
-  - Returns: list of parcels + total_matching count + search_url
+  - Returns: list of parcels + total_matching count + facet sections + search_url
 
 ---
 

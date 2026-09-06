@@ -146,43 +146,42 @@ Return ONLY this JSON:
 <!-- END stage2_relax -->
 
 
-## Stage 2 — returned-candidate narrowing
+## Stage 2 — facet-guided narrowing
 
-Runs after Scout returns, before the expensive Enricher and Scorer stages, when Scout returned more parcels than the configured shortlist size. It examines every returned candidate, describes factual patterns, and recommends useful ways to reach the enrichment limit.
+Runs after Scout returns, before the expensive Enricher and Scorer stages, when LandWatch still reports more matches than the configured shortlist size. It receives only validated facet options derived from LandWatch's contextual counts and must choose among those safe options by ID.
 
 <!-- BEGIN stage2 -->
 
 
-A user's land search has {total_matching} total matches and Scout returned
-{returned_count} candidate records. Only {candidate_limit} or fewer may proceed
-to enrichment and scoring.
+A user's land search has {total_matching} total matches. Only {candidate_limit}
+or fewer may proceed to enrichment and scoring.
 
-The search criteria (some values may be system defaults):
+The current search criteria:
 {criteria_json}
 
-Compact factual summaries of every returned candidate:
-{candidate_json}
+Validated narrowing options derived from LandWatch facets:
+{refinement_options_json}
 
-Identify common conditions in the returned inventory and recommend useful ways
-to reduce it. Then write one short question offering both valid next steps:
-select up to {candidate_limit} candidates, or provide narrower criteria.
+Identify common patterns in those options and pick 3-5 useful option IDs that
+would materially reduce the count. Then write one short question asking the
+user to choose one of the suggested filters or type a tighter preference.
 
 Rules:
 
-- **CRITICAL**: Your question MUST clearly state BOTH numbers: "{total_matching} 
-  properties found" and "{returned_count} shown as candidates". Never say you 
-  "found {returned_count}" when there are {total_matching} total matches.
-- Base every common condition on the candidate summaries. Do not invent facts.
-- Prefer recommendations grounded in observed location, price, acreage, or
-  property-type groupings.
-- Do not rank, score, or claim one parcel is better than another.
+- You MUST use only option IDs that appear in `refinement_options_json`.
+- Prefer a mix of dimensions such as location, budget, acreage, residence, or
+  property type when the data supports it.
+- Base every common condition on the validated options and counts. Do not
+  invent facts.
+- Do not mention parcel selection. The user must narrow further until the total
+  match count is {candidate_limit} or fewer.
 - Be warm and brief. Do not apologise or explain the pipeline.
 
 Return ONLY this JSON:
 {"reasoning": "<why these cuts are useful, 1-2 sentences>",
  "common_conditions": ["<observed pattern>", "<observed pattern>"],
- "recommendations": ["<specific narrowing option>", "<specific option>"],
- "question": "<short selection-or-narrowing question>"}
+ "recommended_option_ids": ["<option id>", "<option id>"],
+ "question": "<short narrowing question>"}
 
 <!-- END stage2 -->
 

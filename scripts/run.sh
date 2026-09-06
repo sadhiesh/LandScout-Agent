@@ -8,7 +8,9 @@ echo "🏞️  Starting LandScout..."
 echo ""
 
 # Get the absolute path to the repo root
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+cd "$REPO_ROOT"
 # Repo root so `import agents` / `import api` work. Tool clients
 # (landwatch, collin_cad, collin_flood, fema_flood) are installed packages.
 export PYTHONPATH="${REPO_ROOT}:${PYTHONPATH}"
